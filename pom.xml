@@ -10,7 +10,10 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>logCollector</module>
+        <module>flume</module>
     </modules>
-
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
 </project>

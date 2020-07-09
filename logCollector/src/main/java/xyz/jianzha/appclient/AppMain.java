@@ -745,9 +745,11 @@ public class AppMain {
 
             boolean b = random.nextBoolean();
 
-            if (b) { // 字符串
+            // 字符串
+            if (b) {
                 // int choice = random.nextBoolean() ? 65 : 97; 取得65大写字母还是97小写字母
-                str.append((char) (65 + random.nextInt(26)));// 取得大写字母
+                // 取得大写字母
+                str.append((char) (65 + random.nextInt(26)));
             } else { // 数字
                 str.append(String.valueOf(random.nextInt(10)));
             }
