@@ -18,7 +18,6 @@ import java.util.Random;
  */
 public class AppMain {
 
-
     private static final Logger logger = LoggerFactory.getLogger(AppMain.class);
     private static Random rand = new Random();
 
@@ -32,7 +31,9 @@ public class AppMain {
      */
     private static int s_uid = 0;
 
-    // 商品id
+    /**
+     * 商品id
+     */
     private static int s_goodsid = 0;
 
     public static void main(String[] args) {
@@ -141,7 +142,6 @@ public class AppMain {
                     break;
 
                 default:
-                    throw new IllegalStateException("Unexpected value: " + flag);
             }
 
             // 延迟
@@ -189,6 +189,7 @@ public class AppMain {
             case (2):
                 appBase.setL("pt");
                 break;
+            default:
         }
 
         // 渠道号   从哪个渠道来的
@@ -201,6 +202,8 @@ public class AppMain {
                 appBase.setAr("BR");
             case 1:
                 appBase.setAr("MX");
+                break;
+            default:
         }
 
         // 手机品牌 ba ,手机型号 md，就取2位数字了
@@ -218,6 +221,7 @@ public class AppMain {
                 appBase.setBa("HTC");
                 appBase.setMd("HTC-" + rand.nextInt(20));
                 break;
+            default:
         }
 
         // 嵌入sdk的版本
@@ -240,6 +244,7 @@ public class AppMain {
             case 3:
                 appBase.setHw("1080*1920");
                 break;
+            default:
         }
 
         // 客户端产生日志时间
@@ -258,6 +263,7 @@ public class AppMain {
             case 2:
                 appBase.setNw("WIFI");
                 break;
+            default:
         }
 
         // 拉丁美洲 西经34°46′至西经117°09；北纬32°42′至南纬53°54′
@@ -361,7 +367,6 @@ public class AppMain {
                 break;
             default:
                 appNewsDetail.setType1("");
-                break;
         }
 
         // 分类
@@ -496,7 +501,7 @@ public class AppMain {
         //设置日志类型
         appStart.setEn("start");
 
-        //    语言  es,en,pt
+        // 语言 es,en,pt
         int flag = rand.nextInt(3);
         switch (flag) {
             case (0):
@@ -508,6 +513,7 @@ public class AppMain {
             case (2):
                 appStart.setL("pt");
                 break;
+            default:
         }
 
         // 渠道号   从哪个渠道来的
@@ -520,6 +526,8 @@ public class AppMain {
                 appStart.setAr("BR");
             case 1:
                 appStart.setAr("MX");
+                break;
+            default:
         }
 
         // 手机品牌 ba ,手机型号 md，就取2位数字了
@@ -537,6 +545,7 @@ public class AppMain {
                 appStart.setBa("HTC");
                 appStart.setMd("HTC-" + rand.nextInt(20));
                 break;
+            default:
         }
 
         // 嵌入sdk的版本
@@ -559,6 +568,7 @@ public class AppMain {
             case 3:
                 appStart.setHw("1080*1920");
                 break;
+            default:
         }
 
         // 客户端产生日志时间
@@ -577,6 +587,7 @@ public class AppMain {
             case 2:
                 appStart.setNw("WIFI");
                 break;
+            default:
         }
 
         // 拉丁美洲 西经34°46′至西经117°09；北纬32°42′至南纬53°54′
@@ -661,13 +672,13 @@ public class AppMain {
      */
     private static JSONObject generateBackground() {
 
-        AppActive_background appActive_background = new AppActive_background();
+        AppActive_background appActiveBackground = new AppActive_background();
 
         // 启动源
         int flag = rand.nextInt(3) + 1;
-        appActive_background.setActive_source(flag + "");
+        appActiveBackground.setActive_source(flag + "");
 
-        JSONObject jsonObject = (JSONObject) JSON.toJSON(appActive_background);
+        JSONObject jsonObject = (JSONObject) JSON.toJSON(appActiveBackground);
 
         return packEventJson("active_background", jsonObject);
     }
@@ -679,14 +690,10 @@ public class AppMain {
 
         AppErrorLog appErrorLog = new AppErrorLog();
 
-        /**
-         * 错误摘要
-         */
+        //错误摘要
         String[] errorBriefs = {"at cn.lift.dfdf.web.AbstractBaseController.validInbound(AbstractBaseController.java:72)", "at cn.lift.appIn.control.CommandUtil.getInfo(CommandUtil.java:67)"};
 
-        /**
-         * 错误详情
-         */
+        //错误详情
         String[] errorDetails = {"java.lang.NullPointerException\\n    " + "at cn.lift.appIn.web.AbstractBaseController.validInbound(AbstractBaseController.java:72)\\n " + "at cn.lift.dfdf.web.AbstractBaseController.validInbound", "at cn.lift.dfdfdf.control.CommandUtil.getInfo(CommandUtil.java:67)\\n " + "at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\\n" + " at java.lang.reflect.Method.invoke(Method.java:606)\\n"};
 
         //错误摘要
@@ -725,7 +732,8 @@ public class AppMain {
 
         for (int i = 0; i < length; i++) {
             // 字符串
-            str.append((char) (65 + random.nextInt(26)));// 取得大写字母
+            // 取得大写字母
+            str.append((char) (65 + random.nextInt(26)));
         }
 
         return str.toString();
@@ -750,8 +758,9 @@ public class AppMain {
                 // int choice = random.nextBoolean() ? 65 : 97; 取得65大写字母还是97小写字母
                 // 取得大写字母
                 str.append((char) (65 + random.nextInt(26)));
-            } else { // 数字
-                str.append(String.valueOf(random.nextInt(10)));
+            } else {
+                // 数字
+                str.append(random.nextInt(10));
             }
         }
 
@@ -821,7 +830,7 @@ public class AppMain {
     private static char getRandomChar() {
 
         String str = "";
-        int hightPos; //
+        int hightPos;
         int lowPos;
 
         Random random = new Random();

@@ -1,7 +1,6 @@
 package xyz.jianzha.gmall.mock.db.bean;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
@@ -10,13 +9,13 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 订单明细表
+ * 退单表
  *
  * @author Y_Kevin
- * @date 2020-07-11 23:47
+ * @date 2020-07-12 13:42
  */
 @Data
-public class OrderDetail implements Serializable {
+public class OrderRefundInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -26,47 +25,45 @@ public class OrderDetail implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+    private Long userId;
+
     /**
      * 订单编号
      */
     private Long orderId;
 
     /**
-     * sku_id
+     * skuid
      */
     private Long skuId;
 
     /**
-     * sku名称（冗余)
+     * 退款类型
      */
-    private String skuName;
+    private String refundType;
 
     /**
-     * 图片名称（冗余)
+     * 退款件数
      */
-    private String imgUrl;
+    private Long refundNum;
 
     /**
-     * 购买价格(下单时sku价格）
+     * 退款金额
      */
-    private BigDecimal orderPrice;
+    private BigDecimal refundAmount;
 
     /**
-     * 购买个数
+     * 原因类型
      */
-    private Long skuNum;
+    private String refundReasonType;
+
+    /**
+     * 原因内容
+     */
+    private String refundReasonTxt;
 
     /**
      * 创建时间
      */
     private Date createTime;
-
-
-    @TableField(exist = false)
-    private SkuInfo skuInfo;
-
-    private String sourceType;
-
-    private Long sourceId;
 }
-

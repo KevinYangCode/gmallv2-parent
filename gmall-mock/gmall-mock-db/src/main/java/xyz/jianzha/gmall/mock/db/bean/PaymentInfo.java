@@ -1,7 +1,6 @@
 package xyz.jianzha.gmall.mock.db.bean;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
@@ -10,13 +9,13 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 订单明细表
+ * 支付流水表
  *
  * @author Y_Kevin
- * @date 2020-07-11 23:47
+ * @date 2020-07-12 13:43
  */
 @Data
-public class OrderDetail implements Serializable {
+public class PaymentInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -27,46 +26,42 @@ public class OrderDetail implements Serializable {
     private Long id;
 
     /**
+     * 对外业务编号
+     */
+    private String outTradeNo;
+
+    /**
      * 订单编号
      */
     private Long orderId;
 
     /**
-     * sku_id
+     * 用户编号
      */
-    private Long skuId;
+    private Long userId;
 
     /**
-     * sku名称（冗余)
+     * 支付宝交易流水编号
      */
-    private String skuName;
+    private String alipayTradeNo;
 
     /**
-     * 图片名称（冗余)
+     * 支付金额
      */
-    private String imgUrl;
+    private BigDecimal totalAmount;
 
     /**
-     * 购买价格(下单时sku价格）
+     * 交易内容
      */
-    private BigDecimal orderPrice;
+    private String subject;
 
     /**
-     * 购买个数
+     * 支付方式
      */
-    private Long skuNum;
+    private String paymentType;
 
     /**
-     * 创建时间
+     * 支付时间
      */
-    private Date createTime;
-
-
-    @TableField(exist = false)
-    private SkuInfo skuInfo;
-
-    private String sourceType;
-
-    private Long sourceId;
+    private Date paymentTime;
 }
-

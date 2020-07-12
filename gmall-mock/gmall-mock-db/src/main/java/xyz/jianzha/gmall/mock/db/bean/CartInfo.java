@@ -1,7 +1,6 @@
 package xyz.jianzha.gmall.mock.db.bean;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
@@ -10,13 +9,13 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 订单明细表
+ * 购物车表 用户登录系统时更新冗余
  *
  * @author Y_Kevin
- * @date 2020-07-11 23:47
+ * @date 2020-07-12 13:39
  */
 @Data
-public class OrderDetail implements Serializable {
+public class CartInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -27,46 +26,44 @@ public class OrderDetail implements Serializable {
     private Long id;
 
     /**
-     * 订单编号
+     * 用户id
      */
-    private Long orderId;
+    private Long userId;
 
     /**
-     * sku_id
+     * skuid
      */
     private Long skuId;
 
     /**
-     * sku名称（冗余)
+     * 放入购物车时价格
      */
-    private String skuName;
+    private BigDecimal cartPrice;
 
     /**
-     * 图片名称（冗余)
-     */
-    private String imgUrl;
-
-    /**
-     * 购买价格(下单时sku价格）
-     */
-    private BigDecimal orderPrice;
-
-    /**
-     * 购买个数
+     * 数量
      */
     private Long skuNum;
 
     /**
-     * 创建时间
+     * 图片文件
      */
+    private String imgUrl;
+
+    /**
+     * sku名称 (冗余)
+     */
+    private String skuName;
+
     private Date createTime;
 
+    private Date operateTime;
 
-    @TableField(exist = false)
-    private SkuInfo skuInfo;
+    private Integer isOrdered;
+
+    private Date orderTime;
 
     private String sourceType;
 
     private Long sourceId;
 }
-

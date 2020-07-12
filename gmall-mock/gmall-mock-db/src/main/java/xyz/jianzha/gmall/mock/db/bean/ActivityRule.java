@@ -1,5 +1,7 @@
 package xyz.jianzha.gmall.mock.db.bean;
 
+import lombok.Data;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -9,6 +11,7 @@ import java.math.BigDecimal;
  * @author Y_Kevin
  * @date 2020-07-11 23:46
  */
+@Data
 public class ActivityRule implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -47,74 +50,4 @@ public class ActivityRule implements Serializable {
      * 优惠级别
      */
     private Long benefitLevel;
-
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public Integer getActivityId() {
-        return activityId;
-    }
-
-    public void setActivityId(Integer activityId) {
-        this.activityId = activityId;
-    }
-
-    public BigDecimal getConditionAmount() {
-        return conditionAmount;
-    }
-
-    public void setConditionAmount(BigDecimal conditionAmount) {
-        this.conditionAmount = conditionAmount;
-    }
-
-    public Long getConditionNum() {
-        return conditionNum;
-    }
-
-    public void setConditionNum(Long conditionNum) {
-        this.conditionNum = conditionNum;
-    }
-
-    public BigDecimal getBenefitAmount() {
-        return benefitAmount;
-    }
-
-    public void setBenefitAmount(BigDecimal benefitAmount) {
-        this.benefitAmount = benefitAmount;
-    }
-
-    public Long getBenefitDiscount() {
-        return benefitDiscount;
-    }
-
-    public void setBenefitDiscount(Long benefitDiscount) {
-        this.benefitDiscount = benefitDiscount;
-    }
-
-    public Long getBenefitLevel() {
-        return benefitLevel;
-    }
-
-    public void setBenefitLevel(Long benefitLevel) {
-        this.benefitLevel = benefitLevel;
-    }
-
-    @Override
-    public String toString() {
-        return "ActivityRule{" +
-                "id=" + id +
-                ", activityId=" + activityId +
-                ", conditionAmount=" + conditionAmount +
-                ", conditionNum=" + conditionNum +
-                ", benefitAmount=" + benefitAmount +
-                ", benefitDiscount=" + benefitDiscount +
-                ", benefitLevel=" + benefitLevel +
-                "}";
-    }
 }

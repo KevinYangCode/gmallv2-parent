@@ -6,17 +6,16 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 订单明细表
+ * 优惠券领用表
  *
  * @author Y_Kevin
- * @date 2020-07-11 23:47
+ * @date 2020-07-12 13:41
  */
 @Data
-public class OrderDetail implements Serializable {
+public class CouponUse implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -27,46 +26,49 @@ public class OrderDetail implements Serializable {
     private Long id;
 
     /**
-     * 订单编号
+     * 购物券ID
+     */
+    private Long couponId;
+
+    /**
+     * 用户ID
+     */
+    private Long userId;
+
+    /**
+     * 订单ID
      */
     private Long orderId;
 
     /**
-     * sku_id
+     * 购物券状态
      */
-    private Long skuId;
+    private String couponStatus;
 
     /**
-     * sku名称（冗余)
+     * 领券时间
      */
-    private String skuName;
+    private Date getTime;
 
     /**
-     * 图片名称（冗余)
+     * 使用时间
      */
-    private String imgUrl;
+    private Date usingTime;
 
     /**
-     * 购买价格(下单时sku价格）
+     * 支付时间
      */
-    private BigDecimal orderPrice;
+    private Date usedTime;
 
     /**
-     * 购买个数
+     * 过期时间
      */
-    private Long skuNum;
-
-    /**
-     * 创建时间
-     */
-    private Date createTime;
-
+    private Date expireTime;
 
     @TableField(exist = false)
-    private SkuInfo skuInfo;
+    private CouponInfo couponInfo;
 
-    private String sourceType;
-
-    private Long sourceId;
+    @TableField(exist = false)
+    private OrderInfo orderInfo;
 }
 

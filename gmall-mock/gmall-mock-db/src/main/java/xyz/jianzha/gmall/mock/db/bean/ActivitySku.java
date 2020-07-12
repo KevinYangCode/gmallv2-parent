@@ -8,50 +8,34 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 活动表
+ * 活动参与商品
  *
  * @author Y_Kevin
- * @date 2020-07-11 23:43
+ * @date 2020-07-12 13:38
  */
 @Data
-public class ActivityInfo implements Serializable {
+public class ActivitySku implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
-     * 活动id
+     * 编号
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
-     * 活动名称
+     * 活动id
      */
-    private String activityName;
+    private Long activityId;
 
     /**
-     * 活动类型
+     * sku_id
      */
-    private String activityType;
-
-    /**
-     * 活动描述
-     */
-    private String activityDesc;
-
-    /**
-     * 开始时间
-     */
-    private Date startTime;
-
-    /**
-     * 结束时间
-     */
-    private Date endTime;
+    private Long skuId;
 
     /**
      * 创建时间
      */
     private Date createTime;
-
 }

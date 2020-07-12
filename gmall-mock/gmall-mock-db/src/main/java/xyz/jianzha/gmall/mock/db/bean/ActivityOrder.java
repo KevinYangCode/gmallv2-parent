@@ -37,7 +37,6 @@ public class ActivityOrder implements Serializable {
      */
     private Long orderId;
 
-
     @TableField(exist = false)
     private OrderInfo orderInfo;
 

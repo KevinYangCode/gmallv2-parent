@@ -10,7 +10,9 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
-/**订单表
+/**
+ * 订单表
+ *
  * @author Y_Kevin
  * @date 2020-07-11 23:47
  */
@@ -18,7 +20,6 @@ import java.util.List;
 public class OrderInfo implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
 
     /**
      * 编号
@@ -50,7 +51,6 @@ public class OrderInfo implements Serializable {
      * 用户id
      */
     private Long userId;
-
 
     /**
      * 送货地址
@@ -107,188 +107,46 @@ public class OrderInfo implements Serializable {
      */
     private Integer provinceId;
 
-
     private BigDecimal originalTotalAmount;
 
     private BigDecimal feightFee;
 
     private BigDecimal benefitReduceAmount;
 
-
-
-
     @TableField(exist = false)
     private List<OrderDetail> orderDetailList;
 
+    public void sumTotalAmount() {
+        this.benefitReduceAmount = this.benefitReduceAmount == null ? BigDecimal.ZERO : this.benefitReduceAmount;
+        this.feightFee = this.feightFee == null ? BigDecimal.ZERO : this.feightFee;
+        this.originalTotalAmount = this.originalTotalAmount == null ? BigDecimal.ZERO : this.originalTotalAmount;
+        this.finalTotalAmount = this.finalTotalAmount == null ? BigDecimal.ZERO : this.finalTotalAmount;
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getConsignee() {
-        return consignee;
-    }
-
-    public void setConsignee(String consignee) {
-        this.consignee = consignee;
-    }
-
-    public String getConsigneeTel() {
-        return consigneeTel;
-    }
-
-    public void setConsigneeTel(String consigneeTel) {
-        this.consigneeTel = consigneeTel;
-    }
-
-
-
-    public String getOrderStatus() {
-        return orderStatus;
-    }
-
-    public void setOrderStatus(String orderStatus) {
-        this.orderStatus = orderStatus;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-
-
-    public String getDeliveryAddress() {
-        return deliveryAddress;
-    }
-
-    public void setDeliveryAddress(String deliveryAddress) {
-        this.deliveryAddress = deliveryAddress;
-    }
-
-    public String getOrderComment() {
-        return orderComment;
-    }
-
-    public void setOrderComment(String orderComment) {
-        this.orderComment = orderComment;
-    }
-
-    public String getOutTradeNo() {
-        return outTradeNo;
-    }
-
-    public void setOutTradeNo(String outTradeNo) {
-        this.outTradeNo = outTradeNo;
-    }
-
-    public String getTradeBody() {
-        return tradeBody;
-    }
-
-    public void setTradeBody(String tradeBody) {
-        this.tradeBody = tradeBody;
-    }
-
-    public Date getCreateTime() {
-        return createTime;
-    }
-
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
-    }
-
-    public Date getOperateTime() {
-        return operateTime;
-    }
-
-    public void setOperateTime(Date operateTime) {
-        this.operateTime = operateTime;
-    }
-
-    public Date getExpireTime() {
-        return expireTime;
-    }
-
-    public void setExpireTime(Date expireTime) {
-        this.expireTime = expireTime;
-    }
-
-    public String getTrackingNo() {
-        return trackingNo;
-    }
-
-    public void setTrackingNo(String trackingNo) {
-        this.trackingNo = trackingNo;
-    }
-
-    public Long getParentOrderId() {
-        return parentOrderId;
-    }
-
-    public void setParentOrderId(Long parentOrderId) {
-        this.parentOrderId = parentOrderId;
-    }
-
-    public String getImgUrl() {
-        return imgUrl;
-    }
-
-    public void setImgUrl(String imgUrl) {
-        this.imgUrl = imgUrl;
-    }
-
-    public Integer getProvinceId() {
-        return provinceId;
-    }
-
-    public void setProvinceId(Integer provinceId) {
-        this.provinceId = provinceId;
-    }
-
-
-
-    public void sumTotalAmount(){
-
-        this.benefitReduceAmount= this.benefitReduceAmount==null?BigDecimal.ZERO:this.benefitReduceAmount;
-        this.feightFee= this.feightFee==null?BigDecimal.ZERO:this.feightFee;
-        this.originalTotalAmount= this.originalTotalAmount==null?BigDecimal.ZERO:this.originalTotalAmount;
-        this.finalTotalAmount= this.finalTotalAmount==null?BigDecimal.ZERO:this.finalTotalAmount;
-
-
-
-        BigDecimal totalAmount=new BigDecimal("0");
+        BigDecimal totalAmount = new BigDecimal("0");
         for (OrderDetail orderDetail : orderDetailList) {
-            totalAmount= totalAmount.add(orderDetail.getOrderPrice().multiply(new BigDecimal(orderDetail.getSkuNum())));
+            totalAmount = totalAmount.add(orderDetail.getOrderPrice().multiply(new BigDecimal(orderDetail.getSkuNum())));
         }
-        this.originalTotalAmount=  totalAmount;
+        this.originalTotalAmount = totalAmount;
 
-        this.finalTotalAmount=originalTotalAmount.subtract(benefitReduceAmount).add(feightFee);
-
+        this.finalTotalAmount = originalTotalAmount.subtract(benefitReduceAmount).add(feightFee);
     }
 
-    //生成摘要
-    public String getOrderSubject(){
-        String body="";
-        if(orderDetailList!=null&&orderDetailList.size()>0){
-            body=  orderDetailList.get(0).getSkuName();
+    /**
+     * 生成摘要
+     */
+    public String getOrderSubject() {
+        String body = "";
+        if (orderDetailList != null && orderDetailList.size() > 0) {
+            body = orderDetailList.get(0).getSkuName();
         }
-        body+="等"+getTotalSkuNum()+"件商品";
+        body += "等" + getTotalSkuNum() + "件商品";
         return body;
-
     }
 
-    public Long getTotalSkuNum(){
-        Long totalNum=0L;
+    public Long getTotalSkuNum() {
+        Long totalNum = 0L;
         for (OrderDetail orderDetail : orderDetailList) {
-            totalNum+=  orderDetail.getSkuNum();
+            totalNum += orderDetail.getSkuNum();
         }
         return totalNum;
     }
