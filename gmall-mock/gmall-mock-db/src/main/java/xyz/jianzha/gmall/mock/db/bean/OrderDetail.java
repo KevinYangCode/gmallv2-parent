@@ -61,7 +61,6 @@ public class OrderDetail implements Serializable {
      */
     private Date createTime;
 
-
     @TableField(exist = false)
     private SkuInfo skuInfo;
 
