@@ -11,7 +11,7 @@
 
     <artifactId>hivefunction</artifactId>
     <properties>
-        <hive.version>2.3.0</hive.version>
+        <hive.version>2.3.4</hive.version>
     </properties>
 
     <!--    <repositories>-->
