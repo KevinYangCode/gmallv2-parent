@@ -21,7 +21,6 @@
     <modules>
         <module>gmall-common</module>
         <module>gmall-mock-db</module>
-        <module>gmall-mock-log</module>
     </modules>
 
     <dependencies>

@@ -6,3 +6,4 @@
 *.png linguist-language=Java
 *.less linguist-language=Java
 *.jpg linguist-language=Java
+*.sql linguist-language=Java
