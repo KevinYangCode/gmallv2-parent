@@ -5,8 +5,9 @@ APP=gmall
 hive=/opt/module/hive-2.3.6/bin/hive
 
 sql="
-drop table if exists ${APP}.dws_uv_detail_daycount;
-create external table ${APP}.dws_uv_detail_daycount ( 
+use ${APP};
+drop table if exists dws_uv_detail_daycount;
+create external table dws_uv_detail_daycount (
     mid_id string comment '设备唯一标识',
     user_id string comment '用户标识',
     version_code string comment '程序版本号',
@@ -24,14 +25,14 @@ create external table ${APP}.dws_uv_detail_daycount (
     network string comment '网络模式',
     lng string comment '经度',
     lat string comment '纬度',
-    login_count bigint comment '活跃次数' 
+    login_count bigint comment '活跃次数'
 )
-partitioned by(dt string) 
-stored as parquet 
+partitioned by(dt string)
+stored as parquet
 location '/warehouse/gmall/dws/dws_uv_detail_daycount';
 
-drop table if exists ${APP}.dws_user_action_daycount;
-create external table ${APP}.dws_user_action_daycount ( 
+drop table if exists dws_user_action_daycount;
+create external table dws_user_action_daycount (
     user_id string comment '用户 id',
     login_count bigint comment '登录次数',
     cart_count bigint comment '加入购物车次数',
@@ -39,16 +40,16 @@ create external table ${APP}.dws_user_action_daycount (
     order_count bigint comment '下单次数',
     order_amount decimal(16,2) comment '下单金额',
     payment_count bigint comment '支付次数',
-    payment_amount decimal(16,2) comment '支付金额' 
-) 
-comment '每日用户行为' 
-partitioned by (dt string) 
-stored as parquet 
-location '/warehouse/gmall/dws/dws_user_action_daycount/' 
+    payment_amount decimal(16,2) comment '支付金额'
+)
+comment '每日用户行为'
+partitioned by (dt string)
+stored as parquet
+location '/warehouse/gmall/dws/dws_user_action_daycount/'
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_sku_action_daycount;
-create external table ${APP}.dws_sku_action_daycount ( 
+drop table if exists dws_sku_action_daycount;
+create external table dws_sku_action_daycount (
     sku_id string comment 'sku_id',
     order_count bigint comment '被下单次数',
     order_num bigint comment '被下单件数',
@@ -65,16 +66,16 @@ create external table ${APP}.dws_sku_action_daycount (
     appraise_good_count bigint comment '好评数',
     appraise_mid_count bigint comment '中评数',
     appraise_bad_count bigint comment '差评数',
-    appraise_default_count bigint comment '默认评价数' 
-) 
-comment '每日商品行为' 
-partitioned by (dt string) 
-stored as parquet 
-location '/warehouse/gmall/dws/dws_sku_action_daycount/' 
+    appraise_default_count bigint comment '默认评价数'
+)
+comment '每日商品行为'
+partitioned by (dt string)
+stored as parquet
+location '/warehouse/gmall/dws/dws_sku_action_daycount/'
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_coupon_use_daycount;
-create external table ${APP}.dws_coupon_use_daycount ( 
+drop table if exists dws_coupon_use_daycount;
+create external table dws_coupon_use_daycount (
     coupon_id string comment '优惠券 ID',
     coupon_name string comment '购物券名称',
     coupon_type string comment '购物券类型 1 现金券 2 折扣券 3 满减券 4 满件打折券',
@@ -91,16 +92,16 @@ create external table ${APP}.dws_coupon_use_daycount (
     limit_num string comment '最多领用次数',
     get_count bigint comment '领用次数',
     using_count bigint comment '使用(下单)次数',
-    used_count bigint comment '使用(支付)次数' 
-) 
-comment '每日优惠券统计' 
-partitioned by (dt string) 
-stored as parquet 
-location '/warehouse/gmall/dws/dws_coupon_use_daycount/' 
+    used_count bigint comment '使用(支付)次数'
+)
+comment '每日优惠券统计'
+partitioned by (dt string)
+stored as parquet
+location '/warehouse/gmall/dws/dws_coupon_use_daycount/'
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_activity_info_daycount;
-create external table ${APP}.dws_activity_info_daycount( 
+drop table if exists dws_activity_info_daycount;
+create external table dws_activity_info_daycount(
     id string comment '编号',
     activity_name string comment '活动名称',
     activity_type string comment '活动类型',
@@ -108,16 +109,16 @@ create external table ${APP}.dws_activity_info_daycount(
     end_time string comment '结束时间',
     create_time string comment '创建时间',
     order_count bigint comment '下单次数',
-    payment_count bigint comment '支付次数' 
-) 
-comment '购物车信息表' 
-partitioned by (dt string) 
-row format delimited fields terminated by '\t' 
-location '/warehouse/gmall/dws/dws_activity_info_daycount/' 
+    payment_count bigint comment '支付次数'
+)
+comment '购物车信息表'
+partitioned by (dt string)
+row format delimited fields terminated by '\t'
+location '/warehouse/gmall/dws/dws_activity_info_daycount/'
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_sale_detail_daycount;
-create external table ${APP}.dws_sale_detail_daycount ( 
+drop table if exists dws_sale_detail_daycount;
+create external table dws_sale_detail_daycount (
     user_id string comment '用户 id',
     sku_id string comment '商品 id',
     user_gender string comment '用户性别',
@@ -135,14 +136,13 @@ create external table ${APP}.dws_sale_detail_daycount (
     spu_id string comment '商品 spu',
     sku_num int comment '购买个数',
     order_count bigint comment '当日下单单数',
-    order_amount decimal(16,2) comment '当日下单金额' 
-) 
-comment '每日购买行为' 
-partitioned by (dt string) 
-stored as parquet 
-location '/warehouse/gmall/dws/dws_sale_detail_daycount/' 
+    order_amount decimal(16,2) comment '当日下单金额'
+)
+comment '每日购买行为'
+partitioned by (dt string)
+stored as parquet
+location '/warehouse/gmall/dws/dws_sale_detail_daycount/'
 tblproperties ('parquet.compression'='lzo');
 "
 
 $hive -e "$sql"
-
