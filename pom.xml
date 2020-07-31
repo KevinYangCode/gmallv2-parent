@@ -19,6 +19,7 @@
         <module>flume</module>
         <module>gmall-mock</module>
         <module>hive</module>
+        <module>kylin</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
