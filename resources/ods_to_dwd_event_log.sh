@@ -12,8 +12,9 @@ else
 fi
 
 sql="
-    insert overwrite table ${APP}.dwd_display_log 
-    PARTITION (dt='$do_date') 
+    use ${APP};
+    insert overwrite table dwd_display_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -38,11 +39,11 @@ sql="
         get_json_object(event_json,'$.kv.extend1') extend1,
         get_json_object(event_json,'$.kv.category') category,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='display';
     
-    insert overwrite table ${APP}.dwd_newsdetail_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_newsdetail_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -70,11 +71,11 @@ sql="
         get_json_object(event_json,'$.kv.type1') type1,
         get_json_object(event_json,'$.kv.category') category,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='newsdetail';
     
-    insert overwrite table ${APP}.dwd_loading_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_loading_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -101,11 +102,11 @@ sql="
         get_json_object(event_json,'$.kv.type') type,
         get_json_object(event_json,'$.kv.type1') type1,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='loading';
     
-    insert overwrite table ${APP}.dwd_ad_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_ad_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -131,11 +132,11 @@ sql="
         get_json_object(event_json,'$.kv.itemId') itemId,
         get_json_object(event_json,'$.kv.activityId') activityId,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='ad';
     
-    insert overwrite table ${APP}.dwd_notification_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_notification_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -159,11 +160,11 @@ sql="
         get_json_object(event_json,'$.kv.ap_time') ap_time,
         get_json_object(event_json,'$.kv.content') content,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='notification';
     
-    insert overwrite table ${APP}.dwd_active_background_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_active_background_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -184,11 +185,11 @@ sql="
         lat,
         get_json_object(event_json,'$.kv.active_source') active_source,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='active_background';
     
-    insert overwrite table ${APP}.dwd_comment_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_comment_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -216,11 +217,11 @@ sql="
         get_json_object(event_json,'$.kv.praise_count') praise_count,
         get_json_object(event_json,'$.kv.reply_count') reply_count,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='comment';
     
-    insert overwrite table ${APP}.dwd_favorites_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_favorites_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -244,11 +245,11 @@ sql="
         get_json_object(event_json,'$.kv.userid') userid,
         get_json_object(event_json,'$.kv.add_time') add_time,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='favorites';
     
-    insert overwrite table ${APP}.dwd_praise_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_praise_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -273,11 +274,11 @@ sql="
         get_json_object(event_json,'$.kv.type') type,
         get_json_object(event_json,'$.kv.add_time') add_time,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='praise';
     
-    insert overwrite table ${APP}.dwd_error_log 
-    PARTITION (dt='$do_date') 
+    insert overwrite table dwd_error_log 
+    partition (dt='$do_date') 
     select 
         mid_id,
         user_id,
@@ -299,7 +300,7 @@ sql="
         get_json_object(event_json,'$.kv.errorBrief') errorBrief,
         get_json_object(event_json,'$.kv.errorDetail') errorDetail,
         server_time 
-    from ${APP}.dwd_base_event_log 
+    from dwd_base_event_log 
     where dt='$do_date' and event_name='error';
 "
 

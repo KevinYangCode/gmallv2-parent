@@ -1,0 +1,2 @@
+type=command
+command=/opt/module/datas/gmallv2/hdfs_to_hive_ods_log.sh ${dt}

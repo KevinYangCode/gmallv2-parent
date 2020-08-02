@@ -431,3 +431,4 @@ case $1 in
         import_base_dic
 ;;
 esac
+

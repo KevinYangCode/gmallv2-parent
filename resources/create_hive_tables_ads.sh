@@ -219,3 +219,4 @@ location '/warehouse/gmall/ads/ads_sale_tm_category1_stat_mn/';
 "
 
 $hive -e "$sql"
+

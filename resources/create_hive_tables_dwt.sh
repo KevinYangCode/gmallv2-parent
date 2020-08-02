@@ -6,8 +6,8 @@ hive=/opt/module/hive-2.3.6/bin/hive
 
 sql="
 use ${APP};
-drop table if exists dwt_uv_topic;
-create external table dwt_uv_topic (
+drop table if exists dwt_uv_topic; 
+create external table dwt_uv_topic ( 
     mid_id string comment '设备唯一标识',
     user_id string comment '用户标识',
     version_code string comment '程序版本号',
@@ -28,13 +28,13 @@ create external table dwt_uv_topic (
     login_date_first string comment '首次活跃时间',
     login_date_last string comment '末次活跃时间',
     login_day_count bigint comment '当日活跃次数',
-    login_count bigint comment '累积活跃天数'
+    login_count bigint comment '累积活跃天数' 
 )
-stored as parquet
+stored as parquet 
 location '/warehouse/gmall/dwt/dwt_uv_topic';
 
-drop table if exists dwt_user_topic;
-create external table dwt_user_topic (
+drop table if exists dwt_user_topic; 
+create external table dwt_user_topic ( 
     user_id string comment '用户 id',
     login_date_first string comment '首次登录时间',
     login_date_last string comment '末次登录时间',
@@ -51,15 +51,15 @@ create external table dwt_user_topic (
     payment_count decimal(16,2) comment '累积支付次数',
     payment_amount decimal(16,2) comment '累积支付金额',
     payment_last_30d_count decimal(16,2) comment '最近 30 日支付次数',
-    payment_last_30d_amount decimal(16,2) comment '最近 30 日支付金额'
+    payment_last_30d_amount decimal(16,2) comment '最近 30 日支付金额' 
 )
-comment '用户主题宽表'
-stored as parquet
-location '/warehouse/gmall/dwt/dwt_user_topic/'
+comment '用户主题宽表' 
+stored as parquet 
+location '/warehouse/gmall/dwt/dwt_user_topic/' 
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists dwt_sku_topic;
-create external table dwt_sku_topic (
+drop table if exists dwt_sku_topic; 
+create external table dwt_sku_topic ( 
     sku_id string comment 'sku_id',
     spu_id string comment 'spu_id',
     order_last_30d_count bigint comment '最近 30 日被下单次数',
@@ -93,39 +93,39 @@ create external table dwt_sku_topic (
     appraise_good_count bigint comment '累积好评数',
     appraise_mid_count bigint comment '累积中评数',
     appraise_bad_count bigint comment '累积差评数',
-    appraise_default_count bigint comment '累积默认评价数'
-)comment '商品主题宽表'
-stored as parquet
-location '/warehouse/gmall/dwt/dwt_sku_topic/'
+    appraise_default_count bigint comment '累积默认评价数' 
+)comment '商品主题宽表' 
+stored as parquet 
+location '/warehouse/gmall/dwt/dwt_sku_topic/' 
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists dwt_coupon_topic;
-create external table dwt_coupon_topic (
+drop table if exists dwt_coupon_topic; 
+create external table dwt_coupon_topic ( 
     coupon_id string comment '优惠券 ID',
     get_day_count bigint comment '当日领用次数',
     using_day_count bigint comment '当日使用(下单)次数',
     used_day_count bigint comment '当日使用(支付)次数',
     get_count bigint comment '累积领用次数',
     using_count bigint comment '累积使用(下单)次数',
-    used_count bigint comment '累积使用(支付)次数'
+    used_count bigint comment '累积使用(支付)次数' 
 )
-comment '购物券主题宽表'
-stored as parquet
-location '/warehouse/gmall/dwt/dwt_coupon_topic/'
+comment '购物券主题宽表' 
+stored as parquet 
+location '/warehouse/gmall/dwt/dwt_coupon_topic/' 
 tblproperties ('parquet.compression'='lzo');
 
 drop table if exists dwt_activity_topic;
-create external table dwt_activity_topic(
+create external table dwt_activity_topic( 
     id string comment '活动 id',
     activity_name string comment '活动名称',
     order_day_count bigint comment '当日日下单次数',
     payment_day_count bigint comment '当日支付次数',
     order_count bigint comment '累积下单次数',
-    payment_count bigint comment '累积支付次数'
-)
-comment '活动主题宽表'
-row format delimited fields terminated by '\t'
-location '/warehouse/gmall/dwt/dwt_activity_topic/'
+    payment_count bigint comment '累积支付次数' 
+) 
+comment '活动主题宽表' 
+row format delimited fields terminated by '\t' 
+location '/warehouse/gmall/dwt/dwt_activity_topic/' 
 tblproperties ('parquet.compression'='lzo');
 "
 

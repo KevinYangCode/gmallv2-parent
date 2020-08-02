@@ -12,7 +12,9 @@ else
 fi
 
 sql1="
-insert overwrite table ${APP}.dwd_dim_sku_info partition(dt='$do_date') 
+use ${APP};
+set hive.exec.dynamic.partition.mode=nonstrict; 
+insert overwrite table dwd_dim_sku_info partition(dt='$do_date') 
 select 
     sku.id,
     sku.spu_id,
@@ -32,35 +34,35 @@ select
     sku.create_time 
 from 
 ( 
-    select * from ${APP}.ods_sku_info where dt='$do_date' 
+    select * from ods_sku_info where dt='$do_date' 
 )sku 
 join 
 ( 
-    select * from ${APP}.ods_base_trademark where dt='$do_date' 
+    select * from ods_base_trademark where dt='$do_date' 
 )ob 
 on sku.tm_id=ob.tm_id 
 join 
 ( 
-    select * from ${APP}.ods_spu_info where dt='$do_date' 
+    select * from ods_spu_info where dt='$do_date' 
 )spu 
 on spu.id = sku.spu_id 
 join 
 ( 
-    select * from ${APP}.ods_base_category3 where dt='$do_date' 
+    select * from ods_base_category3 where dt='$do_date' 
 )c3 
 on sku.category3_id=c3.id 
 join 
 ( 
-    select * from ${APP}.ods_base_category2 where dt='$do_date' 
+    select * from ods_base_category2 where dt='$do_date' 
 )c2 
 on c3.category2_id=c2.id 
 join 
 ( 
-    select * from ${APP}.ods_base_category1 where dt='$do_date' 
+    select * from ods_base_category1 where dt='$do_date' 
 )c1 
 on c2.category1_id=c1.id;
 
-insert overwrite table ${APP}.dwd_dim_coupon_info partition(dt='$do_date') 
+insert overwrite table dwd_dim_coupon_info partition(dt='$do_date') 
 select 
     id,
     coupon_name,
@@ -78,10 +80,10 @@ select
     limit_num,
     operate_time,
     expire_time 
-from ${APP}.ods_coupon_info 
+from ods_coupon_info 
 where dt='$do_date';
 
-insert overwrite table ${APP}.dwd_dim_activity_info partition(dt='$do_date') 
+insert overwrite table dwd_dim_activity_info partition(dt='$do_date') 
 select 
     info.id,
     info.activity_name,
@@ -96,15 +98,15 @@ select
     info.create_time 
 from 
 ( 
-    select * from ${APP}.ods_activity_info where dt='$do_date' 
+    select * from ods_activity_info where dt='$do_date' 
 )info 
 left join 
 ( 
-    select * from ${APP}.ods_activity_rule where dt='$do_date' 
+    select * from ods_activity_rule where dt='$do_date' 
 )rule 
 on info.id = rule.activity_id;
 
-insert overwrite table ${APP}.dwd_fact_order_detail partition(dt='$do_date') 
+insert overwrite table dwd_fact_order_detail partition(dt='$do_date') 
 select 
     od.id,
     od.order_id,
@@ -118,15 +120,15 @@ select
     od.order_price*od.sku_num 
 from 
 ( 
-    select * from ${APP}.ods_order_detail where dt='$do_date' 
+    select * from ods_order_detail where dt='$do_date' 
 )od 
 join 
 (
-    select * from ${APP}.ods_order_info where dt='$do_date' 
+    select * from ods_order_info where dt='$do_date' 
 )oi 
 on od.order_id=oi.id;
 
-insert overwrite table ${APP}.dwd_fact_payment_info partition(dt='$do_date') 
+insert overwrite table dwd_fact_payment_info partition(dt='$do_date') 
 select 
     pi.id,
     pi.out_trade_no,
@@ -140,15 +142,15 @@ select
     oi.province_id 
 from 
 ( 
-    select * from ${APP}.ods_payment_info where dt='$do_date' 
+    select * from ods_payment_info where dt='$do_date' 
 )pi 
 join 
 ( 
-    select id,province_id from ${APP}.ods_order_info where dt='$do_date' 
+    select id,province_id from ods_order_info where dt='$do_date' 
 )oi 
 on pi.order_id = oi.id;
 
-insert overwrite table ${APP}.dwd_fact_order_refund_info partition(dt='$do_date') 
+insert overwrite table dwd_fact_order_refund_info partition(dt='$do_date') 
 select 
     id,
     user_id,
@@ -159,10 +161,10 @@ select
     refund_amount,
     refund_reason_type,
     create_time 
-from ${APP}.ods_order_refund_info 
+from ods_order_refund_info 
 where dt='$do_date';
 
-insert overwrite table ${APP}.dwd_fact_comment_info partition(dt='$do_date') 
+insert overwrite table dwd_fact_comment_info partition(dt='$do_date') 
 select 
     id,
     user_id,
@@ -171,10 +173,10 @@ select
     order_id,
     appraise,
     create_time 
-from ${APP}.ods_comment_info 
+from ods_comment_info 
 where dt='$do_date';
 
-insert overwrite table ${APP}.dwd_fact_cart_info partition(dt='$do_date') 
+insert overwrite table dwd_fact_cart_info partition(dt='$do_date') 
 select 
     id,
     user_id,
@@ -186,10 +188,10 @@ select
     operate_time,
     is_ordered,
     order_time 
-from ${APP}.ods_cart_info 
+from ods_cart_info 
 where dt='$do_date';
 
-insert overwrite table ${APP}.dwd_fact_favor_info partition(dt='$do_date') 
+insert overwrite table dwd_fact_favor_info partition(dt='$do_date') 
 select 
     id,
     user_id,
@@ -198,11 +200,11 @@ select
     is_cancel,
     create_time,
     cancel_time 
-from ${APP}.ods_favor_info 
+from ods_favor_info 
 where dt='$do_date';
 
 set hive.exec.dynamic.partition.mode=nonstrict; 
-insert overwrite table ${APP}.dwd_fact_coupon_use partition(dt) 
+insert overwrite table dwd_fact_coupon_use partition(dt) 
 select 
     if(new.id is null,old.id,new.id),
     if(new.coupon_id is null,old.coupon_id,new.coupon_id),
@@ -224,11 +226,11 @@ from
         get_time,
         using_time,
         used_time 
-    from ${APP}.dwd_fact_coupon_use 
+    from dwd_fact_coupon_use 
     where dt in ( 
         select 
             date_format(get_time,'yyyy-MM-dd') 
-        from ${APP}.ods_coupon_use 
+        from ods_coupon_use 
         where dt='$do_date' 
     ) 
 )old 
@@ -243,13 +245,13 @@ full outer join
         get_time,
         using_time,
         used_time 
-    from ${APP}.ods_coupon_use 
+    from ods_coupon_use 
     where dt='$do_date' 
 )new 
 on old.id=new.id;
 
 set hive.exec.dynamic.partition.mode=nonstrict; 
-insert overwrite table ${APP}.dwd_fact_order_info partition(dt) 
+insert overwrite table dwd_fact_order_info partition(dt) 
 select 
     if(new.id is null,old.id,new.id),
     if(new.order_status is null,old.order_status,new.order_status),
@@ -287,11 +289,11 @@ from
         benefit_reduce_amount,
         feight_fee,
         final_total_amount 
-    from ${APP}.dwd_fact_order_info 
+    from dwd_fact_order_info 
     where dt in( 
         select 
             date_format(create_time,'yyyy-MM-dd') 
-        from ${APP}.ods_order_info 
+        from ods_order_info 
         where dt='$do_date' 
     ) 
 )old 
@@ -313,22 +315,22 @@ full outer join
         select 
             order_id,
             str_to_map(concat_ws(',',collect_set(concat(order_status,'=',operate_time))),',','=') tms 
-        from ${APP}.ods_order_status_log 
+        from ods_order_status_log 
         where dt='$do_date' group by order_id 
     )log 
     join ( 
-        select * from ${APP}.ods_order_info where dt='$do_date' 
+        select * from ods_order_info where dt='$do_date' 
     )info 
     on log.order_id=info.id 
     left join 
     ( 
-        select * from ${APP}.ods_activity_order where dt='$do_date'
+        select * from ods_activity_order where dt='$do_date'
     )act 
     on log.order_id=act.order_id 
 )new 
 on old.id=new.id;
 
-insert overwrite table ${APP}.dwd_dim_user_info_his_tmp 
+insert overwrite table dwd_dim_user_info_his_tmp 
 select * from 
 ( 
     select 
@@ -342,10 +344,11 @@ select * from
         operate_time,
         '$do_date' start_date,
         '9999-99-99' end_date 
-    from ${APP}.ods_user_info 
+    from ods_user_info 
     where dt='$do_date' 
     
     union all 
+    
     select 
         uh.id,
         uh.name,
@@ -357,21 +360,22 @@ select * from
         uh.operate_time,
         uh.start_date,
         if(ui.id is not null and uh.end_date='9999-99-99',date_add(ui.dt,-1),uh.end_date) end_date 
-    from ${APP}.dwd_dim_user_info_his uh 
+    from dwd_dim_user_info_his uh 
     left join 
     ( 
-        select * from ${APP}.ods_user_info where dt='$do_date' 
+        select * from ods_user_info where dt='$do_date' 
     ) ui 
     on uh.id=ui.id 
 )his 
 order by his.id,start_date;
 
-insert overwrite table ${APP}.dwd_dim_user_info_his 
-select * from ${APP}.dwd_dim_user_info_his_tmp;
+insert overwrite table dwd_dim_user_info_his 
+select * from dwd_dim_user_info_his_tmp;
 "
 
 sql2="
-insert overwrite table ${APP}.dwd_dim_base_province 
+use ${APP};
+insert overwrite table dwd_dim_base_province 
 select 
     bp.id,
     bp.name,
@@ -379,13 +383,13 @@ select
     bp.iso_code,
     bp.region_id,
     br.region_name 
-from ${APP}.ods_base_province bp 
-join ${APP}.ods_base_region br 
+from ods_base_province bp 
+join ods_base_region br 
 on bp.region_id=br.id;
 
-load data local inpath '/opt/module/datas/gmallv2/date_info.txt' into table ${APP}.dwd_dim_date_info;
+load data local inpath '/opt/module/datas/gmallv2/date_info.txt' into table dwd_dim_date_info;
 
-insert overwrite table ${APP}.dwd_dim_user_info_his 
+insert overwrite table dwd_dim_user_info_his 
 select 
     id,
     name,
@@ -397,7 +401,7 @@ select
     operate_time,
     '$do_date',
     '9999-99-99' 
-from ${APP}.ods_user_info oi 
+from ods_user_info oi 
 where oi.dt='$do_date';
 "
 

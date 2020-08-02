@@ -1,0 +1,3 @@
+type=command
+command=/opt/module/datas/gmallv2/dwd_to_dws.sh ${dt}
+dependencies=ods_to_dwd_db,ods_to_dwd_start_log,ods_to_dwd_event_log

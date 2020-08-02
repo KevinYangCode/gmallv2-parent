@@ -1,0 +1,3 @@
+type=command
+command=/opt/module/datas/gmallv2/dwt_to_ads.sh ${dt}
+dependencies=dws_to_dwt

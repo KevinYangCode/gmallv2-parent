@@ -12,7 +12,8 @@ else
 fi
 
 sql="
-insert overwrite table ${APP}.dwt_uv_topic 
+use ${APP};
+insert overwrite table dwt_uv_topic 
 select 
     nvl(new.mid_id,old.mid_id),
     nvl(new.user_id,old.user_id),
@@ -31,22 +32,26 @@ select
     nvl(new.network,old.network),
     nvl(new.lng,old.lng),
     nvl(new.lat,old.lat),
-    nvl(old.login_date_first,'$do_date'), 
-    if(new.login_count>0,'$do_date',old.login_date_last), 
+    nvl(old.login_date_first,'$do_date'),
+    if(new.login_count>0,'$do_date',old.login_date_last),
     nvl(new.login_count,0), 
     nvl(new.login_count,0)+nvl(old.login_count,0)
 from 
 ( 
-    select * from ${APP}.dwt_uv_topic 
+    select 
+        * 
+    from dwt_uv_topic 
 )old 
 full outer join 
 ( 
-    select * from ${APP}.dws_uv_detail_daycount 
+    select 
+        * 
+    from dws_uv_detail_daycount
     where dt='$do_date' 
 )new 
 on old.mid_id=new.mid_id;
 
-insert overwrite table ${APP}.dwt_user_topic 
+insert overwrite table dwt_user_topic 
 select 
     nvl(new.user_id,old.user_id),
     if(old.login_date_first is null and new.login_count>0,'$do_date',old.login_date_first),
@@ -67,7 +72,7 @@ select
     nvl(new.payment_last_30d_amount,0) 
 from 
 (
-    select * from${APP}.dwt_user_topic 
+    select * from dwt_user_topic 
 )old 
 full outer join 
 ( 
@@ -83,8 +88,8 @@ full outer join
         sum(order_amount) order_last_30d_amount,
         sum(payment_count) payment_last_30d_count,
         sum(payment_amount) payment_last_30d_amount 
-    from ${APP}.dws_user_action_daycount 
-    where dt>=date_add( '$do_date',-30) 
+    from dws_user_action_daycount 
+    where dt>=date_add('$do_date',-30) 
     group by user_id 
 )new 
 on old.user_id=new.user_id;
@@ -125,8 +130,8 @@ sku_act as (
         sum(appraise_mid_count) appraise_mid_count30,
         sum(appraise_bad_count) appraise_bad_count30,
         sum(appraise_default_count) appraise_default_count30 
-    from ${APP}.dws_sku_action_daycount 
-    where dt >= date_add ('$do_date',-30) 
+    from dws_sku_action_daycount 
+    where dt>=date_add('$do_date',-30) 
     group by sku_id 
 ),
 sku_topic as(
@@ -165,10 +170,10 @@ sku_topic as(
         appraise_mid_count,
         appraise_bad_count,
         appraise_default_count 
-    from ${APP}.dwt_sku_topic 
+    from dwt_sku_topic 
 )
 
-insert overwrite table ${APP}.dwt_sku_topic 
+insert overwrite table dwt_sku_topic 
 select 
     nvl(sku_act.sku_id,sku_topic.sku_id),
     sku_info.spu_id,
@@ -205,15 +210,15 @@ select
     nvl(sku_topic.appraise_bad_count,0) + nvl(sku_act.appraise_bad_count,0),
     nvl(sku_topic.appraise_default_count,0) + nvl(sku_act.appraise_default_count,0) 
 from sku_act 
-full outer join c
+full outer join sku_topic
 on sku_act.sku_id = sku_topic.sku_id 
 left join 
 (
-    select * from ${APP}.dwd_dim_sku_info where dt='$do_date'
+    select * from dwd_dim_sku_info where dt='$do_date'
 ) sku_info 
 on nvl(sku_act.sku_id,sku_topic.sku_id)= sku_info.id;
 
-insert overwrite table ${APP}.dwt_coupon_topic 
+insert overwrite table dwt_coupon_topic 
 select 
     nvl(new.coupon_id,old.coupon_id),
     nvl(new.get_count,0),
@@ -224,7 +229,7 @@ select
     nvl(old.used_count,0)+nvl(new.used_count,0) 
 from 
 ( 
-    select * from ${APP}.dwt_coupon_topic 
+    select * from dwt_coupon_topic 
 )old 
 full outer join 
 ( 
@@ -233,12 +238,12 @@ full outer join
         get_count,
         using_count,
         used_count 
-    from ${APP}.dws_coupon_use_daycount 
+    from dws_coupon_use_daycount 
     where dt='$do_date' 
 )new 
 on old.coupon_id=new.coupon_id;
 
-insert overwrite table ${APP}.dwt_activity_topic 
+insert overwrite table dwt_activity_topic 
 select 
     nvl(new.id,old.id),
     nvl(new.activity_name,old.activity_name),
@@ -246,21 +251,17 @@ select
     nvl(new.payment_count,0),
     nvl(old.order_count,0)+nvl(new.order_count,0),
     nvl(old.payment_count,0)+nvl(new.payment_count,0) 
-from 
-( 
-    select * from ${APP}.dwt_activity_topic 
-)old 
+from dwt_activity_topic old 
 full outer join 
 ( 
     select id,
         activity_name,
         order_count,
         payment_count 
-    from ${APP}.dws_activity_info_daycount 
+    from dws_activity_info_daycount 
     where dt='$do_date' 
 )new 
 on old.id=new.id;
 "
 
 $hive -e "$sql"
-

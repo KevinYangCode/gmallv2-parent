@@ -1,0 +1,2 @@
+type=command
+command=/opt/module/datas/gmallv2/mysql_to_hdfs.sh all ${dt}

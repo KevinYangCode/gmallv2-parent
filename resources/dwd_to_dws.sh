@@ -12,7 +12,8 @@ else
 fi
 
 sql="
-insert overwrite table ${APP}.dws_uv_detail_daycount partition(dt='$do_date') 
+use ${APP};
+insert overwrite table dws_uv_detail_daycount partition(dt='$do_date') 
 select 
     mid_id, 
     concat_ws('|', collect_set(user_id)) user_id, 
@@ -32,7 +33,7 @@ select
     concat_ws('|', collect_set(lng)) lng, 
     concat_ws('|', collect_set(lat)) lat, 
     count(*) login_count 
-from ${APP}.dwd_start_log 
+from dwd_start_log 
 where dt='$do_date' 
 group by mid_id;
 
@@ -42,7 +43,7 @@ tmp_login as
     select 
         user_id, 
         count(*) login_count 
-    from ${APP}.dwd_start_log 
+    from dwd_start_log 
     where dt='$do_date' and user_id is not null 
     group by user_id 
 ), 
@@ -52,7 +53,7 @@ tmp_cart as
         user_id, 
         count(*) cart_count, 
         sum(cart_price*sku_num) cart_amount 
-    from ${APP}.dwd_fact_cart_info 
+    from dwd_fact_cart_info 
     where dt='$do_date' 
     and user_id is not null 
     and date_format(create_time, 'yyyy-MM-dd')='$do_date' 
@@ -64,7 +65,7 @@ tmp_order as
         user_id, 
         count(*) order_count, 
         sum(final_total_amount) order_amount 
-    from ${APP}.dwd_fact_order_info 
+    from dwd_fact_order_info 
     where dt='$do_date' 
     group by user_id 
 ), 
@@ -74,12 +75,12 @@ tmp_payment as
         user_id, 
         count(*) payment_count, 
         sum(payment_amount) payment_amount 
-    from ${APP}.dwd_fact_payment_info 
+    from dwd_fact_payment_info 
     where dt='$do_date' 
     group by user_id 
 )
 
-insert overwrite table ${APP}.dws_user_action_daycount partition(dt='$do_date') 
+insert overwrite table dws_user_action_daycount partition(dt='$do_date') 
 select 
     user_actions.user_id, 
     sum(user_actions.login_count), 
@@ -145,7 +146,7 @@ tmp_order as
         count(*) order_count, 
         sum(sku_num) order_num, 
         sum(total_amount) order_amount 
-    from ${APP}.dwd_fact_order_detail 
+    from dwd_fact_order_detail 
     where dt='$do_date' 
     group by sku_id 
 ), 
@@ -156,13 +157,13 @@ tmp_payment as
         count(*) payment_count, 
         sum(sku_num) payment_num, 
         sum(total_amount) payment_amount 
-    from ${APP}.dwd_fact_order_detail 
+    from dwd_fact_order_detail 
     where dt='$do_date' 
     and order_id in 
     ( 
         select 
             id 
-        from ${APP}.dwd_fact_order_info 
+        from dwd_fact_order_info 
         where (dt='$do_date' or dt=date_add('$do_date', -1)) 
         and date_format(payment_time, 'yyyy-MM-dd')='$do_date' 
     )
@@ -175,7 +176,7 @@ tmp_refund as
         count(*) refund_count, 
         sum(refund_num) refund_num, 
         sum(refund_amount) refund_amount 
-    from ${APP}.dwd_fact_order_refund_info 
+    from dwd_fact_order_refund_info 
     where dt='$do_date' 
     group by sku_id 
 ), 
@@ -185,7 +186,7 @@ tmp_cart as
         sku_id, 
         count(*) cart_count, 
         sum(sku_num) cart_num 
-    from ${APP}.dwd_fact_cart_info 
+    from dwd_fact_cart_info 
     where dt='$do_date' and date_format(create_time, 'yyyy-MM-dd')='$do_date' 
     group by sku_id 
 ), 
@@ -194,7 +195,7 @@ tmp_favor as
     select 
         sku_id, 
         count(*) favor_count 
-    from ${APP}.dwd_fact_favor_info 
+    from dwd_fact_favor_info 
     where dt='$do_date' and date_format(create_time, 'yyyy-MM-dd')='$do_date' 
     group by sku_id 
 ), 
@@ -206,12 +207,12 @@ tmp_appraise as
         sum(if(appraise='1202', 1, 0)) appraise_mid_count, 
         sum(if(appraise='1203', 1, 0)) appraise_bad_count, 
         sum(if(appraise='1204', 1, 0)) appraise_default_count 
-    from ${APP}.dwd_fact_comment_info 
+    from dwd_fact_comment_info 
     where dt='$do_date' 
     group by sku_id
 )
 
-insert overwrite table ${APP}.dws_sku_action_daycount partition(dt='$do_date') 
+insert overwrite table dws_sku_action_daycount partition(dt='$do_date') 
 select 
     sku_id, 
     sum(order_count), 
@@ -270,7 +271,8 @@ from
         0 appraise_mid_count, 
         0 appraise_bad_count, 
         0 appraise_default_count 
-    from tmp_payment union all 
+    from tmp_payment 
+    union all 
     select 
         sku_id, 
         0 order_count, 
@@ -326,9 +328,9 @@ from
         0 cart_num, 
         favor_count, 
         0 appraise_good_count, 
-       0 appraise_mid_count, 
-       0 appraise_bad_count, 
-       0 appraise_default_count 
+        0 appraise_mid_count, 
+        0 appraise_bad_count, 
+        0 appraise_default_count 
     from tmp_favor 
     union all 
     select 
@@ -353,7 +355,7 @@ from
 )tmp 
 group by sku_id;
 
-insert overwrite table ${APP}.dws_coupon_use_daycount partition(dt='$do_date') 
+insert overwrite table dws_coupon_use_daycount partition(dt='$do_date') 
 select 
     cu.coupon_id, 
     ci.coupon_name, 
@@ -379,7 +381,7 @@ from
         sum(if(date_format(get_time, 'yyyy-MM-dd')='$do_date', 1, 0)) get_count, 
         sum(if(date_format(using_time, 'yyyy-MM-dd')='$do_date', 1, 0)) using_count, 
         sum(if(date_format(used_time, 'yyyy-MM-dd')='$do_date', 1, 0)) used_count 
-    from ${APP}.dwd_fact_coupon_use 
+    from dwd_fact_coupon_use 
     where dt='$do_date' 
     group by coupon_id
 )cu 
@@ -387,12 +389,12 @@ left join
 ( 
     select 
         * 
-    from ${APP}.dwd_dim_coupon_info 
+    from dwd_dim_coupon_info 
     where dt='$do_date' 
 )ci 
 on cu.coupon_id=ci.id;
 
-insert overwrite table ${APP}.dws_activity_info_daycount partition(dt='$do_date') 
+insert overwrite table dws_activity_info_daycount partition(dt='$do_date') 
 select 
     oi.activity_id, 
     ai.activity_name, 
@@ -408,7 +410,7 @@ from
         activity_id, 
         sum(if(date_format(create_time, 'yyyy-MM-dd')='$do_date', 1, 0)) order_count, 
         sum(if(date_format(payment_time, 'yyyy-MM-dd')='$do_date', 1, 0)) payment_count 
-    from ${APP}.dwd_fact_order_info 
+    from dwd_fact_order_info 
     where (dt='$do_date' or dt=date_add('$do_date', -1)) 
     and activity_id is not null 
     group by activity_id 
@@ -417,12 +419,12 @@ join
 ( 
     select 
         * 
-    from ${APP}.dwd_dim_activity_info 
+    from dwd_dim_activity_info 
     where dt='$do_date' 
 )ai 
 on oi.activity_id=ai.id;
 
-insert overwrite table ${APP}.dws_sale_detail_daycount partition(dt='$do_date') 
+insert overwrite table dws_sale_detail_daycount partition(dt='$do_date') 
 select 
     op.user_id, 
     op.sku_id, 
@@ -450,7 +452,7 @@ from
         sum(sku_num) sku_num, 
         count(*) order_count, 
         sum(total_amount) order_amount 
-    from ${APP}.dwd_fact_order_detail 
+    from dwd_fact_order_detail 
     where dt='$do_date' 
     group by user_id,sku_id 
 )op 
@@ -458,7 +460,7 @@ join
 ( 
     select 
         * 
-    from ${APP}.dwd_dim_user_info_his 
+    from dwd_dim_user_info_his 
     where end_date='9999-99-99'
 )ui 
 on op.user_id = ui.id 
@@ -466,7 +468,7 @@ join
 ( 
     select 
         * 
-    from ${APP}.dwd_dim_sku_info 
+    from dwd_dim_sku_info 
     where dt='$do_date'
 )si 
 on op.sku_id = si.id;
