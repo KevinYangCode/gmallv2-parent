@@ -5,8 +5,9 @@ APP=gmall
 hive=/opt/module/hive-2.3.6/bin/hive
 
 sql="
-drop table if exists ${APP}.dws_uv_detail_daycount;
-create external table ${APP}.dws_uv_detail_daycount ( 
+use ${APP};
+drop table if exists dws_uv_detail_daycount;
+create external table dws_uv_detail_daycount (
     mid_id string comment '设备唯一标识',
     user_id string comment '用户标识',
     version_code string comment '程序版本号',
@@ -30,8 +31,8 @@ partitioned by(dt string)
 stored as parquet 
 location '/warehouse/gmall/dws/dws_uv_detail_daycount';
 
-drop table if exists ${APP}.dws_user_action_daycount;
-create external table ${APP}.dws_user_action_daycount ( 
+drop table if exists dws_user_action_daycount;
+create external table dws_user_action_daycount (
     user_id string comment '用户 id',
     login_count bigint comment '登录次数',
     cart_count bigint comment '加入购物车次数',
@@ -47,8 +48,8 @@ stored as parquet
 location '/warehouse/gmall/dws/dws_user_action_daycount/' 
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_sku_action_daycount;
-create external table ${APP}.dws_sku_action_daycount ( 
+drop table if exists dws_sku_action_daycount;
+create external table dws_sku_action_daycount (
     sku_id string comment 'sku_id',
     order_count bigint comment '被下单次数',
     order_num bigint comment '被下单件数',
@@ -73,8 +74,8 @@ stored as parquet
 location '/warehouse/gmall/dws/dws_sku_action_daycount/' 
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_coupon_use_daycount;
-create external table ${APP}.dws_coupon_use_daycount ( 
+drop table if exists dws_coupon_use_daycount;
+create external table dws_coupon_use_daycount (
     coupon_id string comment '优惠券 ID',
     coupon_name string comment '购物券名称',
     coupon_type string comment '购物券类型 1 现金券 2 折扣券 3 满减券 4 满件打折券',
@@ -99,8 +100,8 @@ stored as parquet
 location '/warehouse/gmall/dws/dws_coupon_use_daycount/' 
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_activity_info_daycount;
-create external table ${APP}.dws_activity_info_daycount( 
+drop table if exists dws_activity_info_daycount;
+create external table dws_activity_info_daycount(
     id string comment '编号',
     activity_name string comment '活动名称',
     activity_type string comment '活动类型',
@@ -116,8 +117,8 @@ row format delimited fields terminated by '\t'
 location '/warehouse/gmall/dws/dws_activity_info_daycount/' 
 tblproperties ('parquet.compression'='lzo');
 
-drop table if exists ${APP}.dws_sale_detail_daycount;
-create external table ${APP}.dws_sale_detail_daycount ( 
+drop table if exists dws_sale_detail_daycount;
+create external table dws_sale_detail_daycount (
     user_id string comment '用户 id',
     sku_id string comment '商品 id',
     user_gender string comment '用户性别',

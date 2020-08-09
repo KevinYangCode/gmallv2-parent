@@ -1,0 +1,874 @@
+    <property>
+        <name>io.compression.codecs</name>
+        <value>
+            org.apache.hadoop.io.compress.GzipCodec,
+            org.apache.hadoop.io.compress.DefaultCodec,
+            org.apache.hadoop.io.compress.BZip2Codec,
+            org.apache.hadoop.io.compress.SnappyCodec,
+            com.hadoop.compression.lzo.LzoCodec,
+            com.hadoop.compression.lzo.LzopCodec
+        </value>
+    </property>
+    <property>
+        <name>io.compression.codec.lzo.class</name>
+        <value>com.hadoop.compression.lzo.LzoCodec</value>
+    </property>
+
+
+hadoop jar /opt/module/hadoop-2.7.2/share/hadoop/common/hadoop-lzo-0.4.21-SNAPSHOT.jar com.hadoop.compression.lzo.DistributedLzoIndexer /input/bigtable.lzo
+
+
+# 组件定义
+a1.sources=r1
+a1.channels=c1 c2
+
+# configure source
+# taildir方式读数据
+a1.sources.r1.type = TAILDIR
+# 记录日志读取位置
+a1.sources.r1.positionFile = /opt/module/flume-1.7.0/position/log_position.json
+a1.sources.r1.filegroups = f1
+# 日志位置
+a1.sources.r1.filegroups.f1 = /opt/module/datas/gmallv2/logs/app.+
+a1.sources.r1.fileHeader = true
+a1.sources.r1.channels = c1 c2
+
+#interceptor
+a1.sources.r1.interceptors = i1 i2
+# ETL拦截器
+a1.sources.r1.interceptors.i1.type = xyz.jianzha.flume.interceptor.LogETLInterceptor$Builder
+# 日志类型拦截器
+a1.sources.r1.interceptors.i2.type = xyz.jianzha.flume.interceptor.LogTypeInterceptor$Builder
+
+# 根据日志类型分数据
+a1.sources.r1.selector.type = multiplexing
+a1.sources.r1.selector.header = topic
+a1.sources.r1.selector.mapping.topic_start = c1
+a1.sources.r1.selector.mapping.topic_event = c2
+
+# configure channel
+a1.channels.c1.type = org.apache.flume.channel.kafka.KafkaChannel
+a1.channels.c1.kafka.bootstrap.servers = hadoop101:9092,hadoop102:9092,hadoop103:9092
+# 日志类型是start，数据发往channel1
+a1.channels.c1.kafka.topic = topic_start
+a1.channels.c1.parseAsFlumeEvent = false
+a1.channels.c1.kafka.consumer.group.id = flume-consumer
+
+a1.channels.c2.type = org.apache.flume.channel.kafka.KafkaChannel
+a1.channels.c2.kafka.bootstrap.servers = hadoop101:9092,hadoop102:9092,hadoop103:9092
+# 日志类型是event，数据发往channel2
+a1.channels.c2.kafka.topic = topic_event
+a1.channels.c2.parseAsFlumeEvent = false
+a1.channels.c2.kafka.consumer.group.id = flume-consumer
+
+写拦截器：
+1.定义一个类实现Interceptor接口
+2.重写4个方法
+    初始化
+    单event
+    多event
+    关闭资源
+3.静态内部类
+    创建一个对象
+4.打包上传
+
+
+flume-cluster.sh
+#!/bin/bash
+MODULE=/opt/module/flume-1.7.0
+
+case $1 in
+"start"){
+    for i in hadoop101 hadoop102
+    do
+        echo "=================       $i正在启动Flume       ==============="
+        ssh kevin@$i "source /etc/profile;nohup $MODULE/bin/flume-ng agent -n a1 -c conf/ -f $MODULE/jobs/file-flume-kafka.conf -Dflume.root.logger=INFO,LOGFILE >$MODULE/logs/flume-cluster1.log 2>&1 &"
+    done
+};;
+
+"stop"){
+    for i in hadoop101 hadoop102
+    do
+        echo "=================       $i停止采集 Flume      ==============="
+        ssh $i "ps -ef | grep file-flume-kafka.conf | grep -v grep | awk '{print \$2}' | xargs kill -9"
+    done
+};;
+esac
+
+
+bin/kafka-topics.sh --zookeeper hadoop101:2181 --list
+
+bin/kafka-console-consumer.sh --bootstrap-server hadoop101:9092 --from-beginning --topic topic_start
+
+bin/kafka-topics.sh --delete --zookeeper hadoop101:2181,hadoop102:2181,hadoop103:2181 --topic topic_start
+
+bin/kafka-producer-perf-test.sh --topic test --record-size 100 --num-records 100000 --throughput -1 --producer-props bootstrap.servers=hadoop101:9092,hadoop102:9092,hadoop103:9092
+
+bin/kafka-consumer-perf-test.sh --zookeeper hadoop101:2181,hadoop102:2181,hadoop103:2181 --topic test --fetch-size 10000 --messages 10000000 --threads 1
+
+## 组件
+a1.sources=r1 r2
+a1.channels=c1 c2
+a1.sinks=k1 k2
+
+## source1
+a1.sources.r1.type = org.apache.flume.source.kafka.KafkaSource
+a1.sources.r1.batchSize = 5000
+a1.sources.r1.batchDurationMillis = 2000
+a1.sources.r1.kafka.bootstrap.servers = hadoop101:9092,hadoop102:9092,hadoop103:9092
+a1.sources.r1.kafka.topics=topic_start
+
+## source2
+a1.sources.r2.type = org.apache.flume.source.kafka.KafkaSource
+a1.sources.r2.batchSize = 5000
+a1.sources.r2.batchDurationMillis = 2000
+a1.sources.r2.kafka.bootstrap.servers = hadoop101:9092,hadoop102:9092,hadoop103:9092
+a1.sources.r2.kafka.topics=topic_event
+
+## channel1
+a1.channels.c1.type = file
+a1.channels.c1.checkpointDir = /opt/module/flume-1.7.0/checkpoint/behavior1
+a1.channels.c1.dataDirs = /opt/module/flume/data/behavior1/
+a1.channels.c1.maxFileSize = 2146435071
+a1.channels.c1.capacity = 1000000
+a1.channels.c1.keep-alive = 6
+
+## channel2
+a1.channels.c2.type = file
+a1.channels.c2.checkpointDir = /opt/module/flume-1.7.0/checkpoint/behavior2
+a1.channels.c2.dataDirs = /opt/module/flume-1.7.0/data/behavior2/
+a1.channels.c2.maxFileSize = 2146435071
+a1.channels.c2.capacity = 1000000
+a1.channels.c2.keep-alive = 6
+
+## sink1
+a1.sinks.k1.type = hdfs
+a1.sinks.k1.hdfs.path = /origin_data/gmall/log/topic_start/%Y-%m-%d
+a1.sinks.k1.hdfs.filePrefix = logstart-
+
+##sink2
+a1.sinks.k2.type = hdfs
+a1.sinks.k2.hdfs.path = /origin_data/gmall/log/topic_event/%Y-%m-%d
+a1.sinks.k2.hdfs.filePrefix = logevent-
+
+## 不要产生大量小文件
+a1.sinks.k1.hdfs.rollInterval = 3600
+a1.sinks.k1.hdfs.rollSize = 134217728
+a1.sinks.k1.hdfs.rollCount = 0
+
+a1.sinks.k2.hdfs.rollInterval = 3600
+a1.sinks.k2.hdfs.rollSize = 134217728
+a1.sinks.k2.hdfs.rollCount = 0
+
+## 控制输出文件是原生文件。
+a1.sinks.k1.hdfs.fileType = CompressedStream
+a1.sinks.k2.hdfs.fileType = CompressedStream
+a1.sinks.k1.hdfs.codeC = lzop
+a1.sinks.k2.hdfs.codeC = lzop
+
+## 拼装
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel= c1
+a1.sources.r2.channels = c2
+a1.sinks.k2.channel= c2
+
+
+#! /bin/bash
+
+case $1 in
+"start"){
+    for i in hadoop103
+    do
+        echo " --------启动 $i 消费 flume-------"
+        ssh $i "nohup /opt/module/flume/bin/flume-ng agent --conf-file /opt/module/flume/conf/kafka-flume-hdfs.conf --name a1 -Dflume.root.logger=INFO,LOGFILE >/opt/module/flume/log.txt 2>&1 &"
+    done
+};;
+"stop"){
+    for i in hadoop104
+    do
+        echo " --------停止 $i 消费 flume-------"
+        ssh $i "ps -ef | grep kafka-flume-hdfs | grep -v grep |awk '{print \$2}' | xargs kill"
+    done
+};;
+esac
+
+create table student(id int, name string);
+
+insert into student values(1,"zhangsan");
+
+select * from student;
+
+
+Hive
+
+drop table if exists ods_start_log;
+create external table ods_start_log (`line` string) PARTITIONED BY (`dt` string) STORED AS INPUTFORMAT 'com.hadoop.mapred.DeprecatedLzoTextInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat' LOCATION '/warehouse/gmall/ods/ods_start_log';
+
+load data inpath '/origin_data/gmall/log/topic_start/2020-07-10' into table gmall.ods_start_log partition(dt='2020-07-10');
+
+hadoop jar /opt/module/hadoop-2.7.2/share/hadoop/common/hadoop-lzo-0.4.21-SNAPSHOT.jar com.hadoop.compression.lzo.DistributedLzoIndexer /warehouse/gmall/ods/ods_start_log/dt=2020-07-10
+
+======================
+drop table if exists ods_event_log;
+create external table ods_event_log (`line` string) PARTITIONED BY (`dt` string) STORED AS INPUTFORMAT 'com.hadoop.mapred.DeprecatedLzoTextInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat' LOCATION '/warehouse/gmall/ods/ods_event_log';
+
+load data inpath '/origin_data/gmall/log/topic_event/2020-07-10' into table gmall.ods_event_log partition(dt='2020-07-10');
+
+hadoop jar /opt/module/hadoop-2.7.2/share/hadoop/common/hadoop-lzo-0.4.21-SNAPSHOT.jar com.hadoop.compression.lzo.DistributedLzoIndexer /warehouse/gmall/ods/ods_event_log/dt=2020-07-10
+
+// 建Hive函数（需要注意在哪个库）
+create function base_analizer as 'xyz.jianzha.udf.BaseFieldUDF' using jar 'hdfs://hadoop101:9000/user/hive/jars/hivefunction-1.0-SNAPSHOT.jar';
+create function flat_analizer as 'xyz.jianzha.udtf.EventJsonUDTF' using jar 'hdfs://hadoop101:9000/user/hive/jars/hivefunction-1.0-SNAPSHOT.jar';
+
+select * from dwd_base_event_log where dt='2020-07-10' limit 2;
+
+
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_sku_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_coupon_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_activity_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_base_province/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_order_detail/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_payment_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_order_refund_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_comment_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_cart_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_favor_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_coupon_use/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_order_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_user_info_his/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_user_info_his_tmp/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_date_info/*
+
+select * from dwd_dim_sku_info;
+select * from dwd_dim_coupon_info;
+select * from dwd_dim_activity_info;
+select * from dwd_dim_base_province;
+select * from dwd_fact_order_detail;
+select * from dwd_fact_payment_info;
+select * from dwd_fact_order_refund_info;
+select * from dwd_fact_comment_info;
+select * from dwd_fact_cart_info;
+select * from dwd_fact_favor_info;
+select * from dwd_fact_coupon_use;
+select * from dwd_fact_order_info;
+select * from dwd_dim_user_info_his;
+select * from dwd_dim_user_info_his_tmp;
+select * from dwd_dim_date_info;
+
+hdfs dfs -mkdir /warehouse/gmall/dwd/dwd_fact_coupon_use/dt=2020-07-11
+hdfs dfs -mkdir /warehouse/gmall/dwd/dwd_fact_order_info/dt=2020-07-11
+
+select * from dwd_fact_order_info where dt='2020-07-13';
+select * from dwd_fact_order_detail where dt='2020-07-13';
+select * from dwd_fact_comment_info where dt='2020-07-13';
+select * from dwd_fact_order_refund_info where dt='2020-07-13';
+
+特别
+## /warehouse/gmall/ods/ods_base_province/*
+## /warehouse/gmall/ods/ods_base_region/*
+
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_activity_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_activity_order/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_activity_rule/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_base_category1/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_base_category2/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_base_category3/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_base_dic/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_base_province/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_base_region/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_base_trademark/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_cart_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_comment_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_coupon_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_coupon_use/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_event_log/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_favor_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_order_detail/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_order_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_order_refund_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_order_status_log/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_payment_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_sku_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_spu_info/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_start_log/*
+hdfs dfs -rm -r /warehouse/gmall/ods/ods_user_info/*
+
+select * from ods_activity_info where dt='2020-07-27' limit 20;
+select * from ods_activity_order where dt='2020-07-27' limit 20;
+select * from ods_activity_rule where dt='2020-07-27' limit 20;
+select * from ods_base_category1 where dt='2020-07-27' limit 20;
+select * from ods_base_category2 where dt='2020-07-27' limit 20;
+select * from ods_base_category3 where dt='2020-07-27' limit 20;
+select * from ods_base_dic where dt='2020-07-27' limit 20;
+select * from ods_base_province limit 20;
+select * from ods_base_region limit 20;
+select * from ods_base_trademark where dt='2020-07-27' limit 20;
+select * from ods_cart_info where dt='2020-07-27' limit 20;
+select * from ods_comment_info where dt='2020-07-27' limit 20;
+select * from ods_coupon_info where dt='2020-07-27' limit 20;
+select * from ods_coupon_use where dt='2020-07-27' limit 20;
+select * from ods_event_log where dt='2020-07-27' limit 5;
+select * from ods_favor_info where dt='2020-07-27' limit 20;
+select * from ods_order_detail where dt='2020-07-27' limit 20;
+select * from ods_order_info where dt='2020-07-27' limit 20;
+select * from ods_order_refund_info where dt='2020-07-27' limit 20;
+select * from ods_order_status_log where dt='2020-07-27' limit 20;
+select * from ods_payment_info where dt='2020-07-27' limit 20;
+select * from ods_sku_info where dt='2020-07-27' limit 20;
+select * from ods_spu_info where dt='2020-07-27' limit 20;
+select * from ods_start_log where dt='2020-07-27' limit 5;
+select * from ods_user_info where dt='2020-07-27' limit 20;
+
+show partitions ods_activity_info;
+show partitions ods_activity_order;
+show partitions ods_base_category1;
+show partitions ods_base_category2;
+show partitions ods_base_category3;
+show partitions ods_base_dic;
+show partitions ods_base_trademark;
+show partitions ods_cart_info;
+show partitions ods_comment_info;
+show partitions ods_coupon_info;
+show partitions ods_coupon_use;
+show partitions ods_event_log;
+show partitions ods_favor_info;
+show partitions ods_order_detail;
+show partitions ods_order_info;
+show partitions ods_order_refund_info;
+show partitions ods_order_status_log;
+show partitions ods_payment_info;
+show partitions ods_sku_info;
+show partitions ods_spu_info;
+show partitions ods_user_info;
+
+alter table ods_activity_info add partition (dt='2020-07-24');
+alter table ods_activity_info add partition (dt='2020-07-25');
+alter table ods_activity_info add partition (dt='2020-07-26');
+alter table ods_activity_info add partition (dt='2020-07-27');
+alter table ods_activity_info add partition (dt='2020-07-28');
+
+alter table ods_activity_order add partition (dt='2020-07-24');
+alter table ods_activity_order add partition (dt='2020-07-25');
+alter table ods_activity_order add partition (dt='2020-07-26');
+alter table ods_activity_order add partition (dt='2020-07-27');
+alter table ods_activity_order add partition (dt='2020-07-28');
+
+alter table ods_activity_rule add partition (dt='2020-07-24');
+alter table ods_activity_rule add partition (dt='2020-07-25');
+alter table ods_activity_rule add partition (dt='2020-07-26');
+alter table ods_activity_rule add partition (dt='2020-07-27');
+alter table ods_activity_rule add partition (dt='2020-07-28');
+
+alter table ods_base_category1 add partition (dt='2020-07-24');
+alter table ods_base_category1 add partition (dt='2020-07-25');
+alter table ods_base_category1 add partition (dt='2020-07-26');
+alter table ods_base_category1 add partition (dt='2020-07-27');
+alter table ods_base_category1 add partition (dt='2020-07-28');
+
+alter table ods_base_category2 add partition (dt='2020-07-24');
+alter table ods_base_category2 add partition (dt='2020-07-25');
+alter table ods_base_category2 add partition (dt='2020-07-26');
+alter table ods_base_category2 add partition (dt='2020-07-27');
+alter table ods_base_category2 add partition (dt='2020-07-28');
+
+alter table ods_base_category3 add partition (dt='2020-07-24');
+alter table ods_base_category3 add partition (dt='2020-07-25');
+alter table ods_base_category3 add partition (dt='2020-07-26');
+alter table ods_base_category3 add partition (dt='2020-07-27');
+alter table ods_base_category3 add partition (dt='2020-07-28');
+
+alter table ods_base_dic add partition (dt='2020-07-24');
+alter table ods_base_dic add partition (dt='2020-07-25');
+alter table ods_base_dic add partition (dt='2020-07-26');
+alter table ods_base_dic add partition (dt='2020-07-27');
+alter table ods_base_dic add partition (dt='2020-07-28');
+
+alter table ods_base_trademark add partition (dt='2020-07-24');
+alter table ods_base_trademark add partition (dt='2020-07-25');
+alter table ods_base_trademark add partition (dt='2020-07-26');
+alter table ods_base_trademark add partition (dt='2020-07-27');
+alter table ods_base_trademark add partition (dt='2020-07-28');
+
+alter table ods_cart_info add partition (dt='2020-07-24');
+alter table ods_cart_info add partition (dt='2020-07-25');
+alter table ods_cart_info add partition (dt='2020-07-26');
+alter table ods_cart_info add partition (dt='2020-07-27');
+alter table ods_cart_info add partition (dt='2020-07-28');
+
+alter table ods_comment_info add partition (dt='2020-07-24');
+alter table ods_comment_info add partition (dt='2020-07-25');
+alter table ods_comment_info add partition (dt='2020-07-26');
+alter table ods_comment_info add partition (dt='2020-07-27');
+alter table ods_comment_info add partition (dt='2020-07-28');
+
+alter table ods_coupon_info add partition (dt='2020-07-24');
+alter table ods_coupon_info add partition (dt='2020-07-25');
+alter table ods_coupon_info add partition (dt='2020-07-26');
+alter table ods_coupon_info add partition (dt='2020-07-27');
+alter table ods_coupon_info add partition (dt='2020-07-28');
+
+alter table ods_coupon_use add partition (dt='2020-07-24');
+alter table ods_coupon_use add partition (dt='2020-07-25');
+alter table ods_coupon_use add partition (dt='2020-07-26');
+alter table ods_coupon_use add partition (dt='2020-07-27');
+alter table ods_coupon_use add partition (dt='2020-07-28');
+
+alter table ods_event_log add partition (dt='2020-07-24');
+alter table ods_event_log add partition (dt='2020-07-25');
+alter table ods_event_log add partition (dt='2020-07-26');
+alter table ods_event_log add partition (dt='2020-07-27');
+alter table ods_event_log add partition (dt='2020-07-28');
+
+alter table ods_favor_info add partition (dt='2020-07-24');
+alter table ods_favor_info add partition (dt='2020-07-25');
+alter table ods_favor_info add partition (dt='2020-07-26');
+alter table ods_favor_info add partition (dt='2020-07-27');
+alter table ods_favor_info add partition (dt='2020-07-28');
+
+alter table ods_order_detail add partition (dt='2020-07-24');
+alter table ods_order_detail add partition (dt='2020-07-25');
+alter table ods_order_detail add partition (dt='2020-07-26');
+alter table ods_order_detail add partition (dt='2020-07-27');
+alter table ods_order_detail add partition (dt='2020-07-28');
+
+alter table ods_order_info add partition (dt='2020-07-24');
+alter table ods_order_info add partition (dt='2020-07-25');
+alter table ods_order_info add partition (dt='2020-07-26');
+alter table ods_order_info add partition (dt='2020-07-27');
+alter table ods_order_info add partition (dt='2020-07-28');
+
+alter table ods_order_refund_info add partition (dt='2020-07-24');
+alter table ods_order_refund_info add partition (dt='2020-07-25');
+alter table ods_order_refund_info add partition (dt='2020-07-26');
+alter table ods_order_refund_info add partition (dt='2020-07-27');
+alter table ods_order_refund_info add partition (dt='2020-07-28');
+
+alter table ods_order_status_log add partition (dt='2020-07-24');
+alter table ods_order_status_log add partition (dt='2020-07-25');
+alter table ods_order_status_log add partition (dt='2020-07-26');
+alter table ods_order_status_log add partition (dt='2020-07-27');
+alter table ods_order_status_log add partition (dt='2020-07-28');
+
+alter table ods_payment_info add partition (dt='2020-07-24');
+alter table ods_payment_info add partition (dt='2020-07-25');
+alter table ods_payment_info add partition (dt='2020-07-26');
+alter table ods_payment_info add partition (dt='2020-07-27');
+alter table ods_payment_info add partition (dt='2020-07-28');
+
+alter table ods_sku_info add partition (dt='2020-07-24');
+alter table ods_sku_info add partition (dt='2020-07-25');
+alter table ods_sku_info add partition (dt='2020-07-26');
+alter table ods_sku_info add partition (dt='2020-07-27');
+alter table ods_sku_info add partition (dt='2020-07-28');
+
+alter table ods_spu_info add partition (dt='2020-07-24');
+alter table ods_spu_info add partition (dt='2020-07-25');
+alter table ods_spu_info add partition (dt='2020-07-26');
+alter table ods_spu_info add partition (dt='2020-07-27');
+alter table ods_spu_info add partition (dt='2020-07-28');
+
+alter table ods_start_log add partition (dt='2020-07-24');
+alter table ods_start_log add partition (dt='2020-07-25');
+alter table ods_start_log add partition (dt='2020-07-26');
+alter table ods_start_log add partition (dt='2020-07-27');
+alter table ods_start_log add partition (dt='2020-07-28');
+
+alter table ods_user_info add partition (dt='2020-07-24');
+alter table ods_user_info add partition (dt='2020-07-25');
+alter table ods_user_info add partition (dt='2020-07-26');
+alter table ods_user_info add partition (dt='2020-07-27');
+alter table ods_user_info add partition (dt='2020-07-28');
+
+
+
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_active_background_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_ad_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_base_event_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_comment_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_activity_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_base_province/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_coupon_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_date_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_sku_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_user_info_his/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_dim_user_info_his_tmp/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_display_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_error_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_cart_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_comment_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_coupon_use/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_favor_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_order_detail/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_order_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_order_refund_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_fact_payment_info/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_favorites_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_loading_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_newsdetail_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_notification_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_praise_log/*
+hdfs dfs -rm -r /warehouse/gmall/dwd/dwd_start_log/*
+
+select * from dwd_active_background_log where dt='2020-07-27' limit 10;
+select * from dwd_ad_log where dt='2020-07-27' limit 10;
+select * from dwd_base_event_log where dt='2020-07-27' limit 10;
+select * from dwd_comment_log where dt='2020-07-27' limit 10;
+select * from dwd_dim_activity_info where dt='2020-07-27' limit 10;
+select * from dwd_dim_base_province limit 10;
+select * from dwd_dim_coupon_info where dt='2020-07-27' limit 10;
+select * from dwd_dim_date_info limit 10;
+select * from dwd_dim_sku_info where dt='2020-07-27' limit 10;
+select * from dwd_dim_user_info_his limit 10;
+select * from dwd_dim_user_info_his_tmp limit 10;
+select * from dwd_display_log where dt='2020-07-27' limit 10;
+select * from dwd_error_log where dt='2020-07-27' limit 10;
+select * from dwd_fact_cart_info where dt='2020-07-27' limit 10;
+select * from dwd_fact_comment_info where dt='2020-07-27' limit 10;
+select * from dwd_fact_coupon_use where dt='2020-07-27' limit 10;
+select * from dwd_fact_favor_info where dt='2020-07-27' limit 10;
+select * from dwd_fact_order_detail where dt='2020-07-27' limit 10;
+select * from dwd_fact_order_info where dt='2020-07-27' limit 10;
+select * from dwd_fact_order_refund_info where dt='2020-07-27' limit 10;
+select * from dwd_fact_payment_info where dt='2020-07-27' limit 10;
+select * from dwd_favorites_log where dt='2020-07-27' limit 10;
+select * from dwd_loading_log where dt='2020-07-27' limit 10;
+select * from dwd_newsdetail_log where dt='2020-07-27' limit 10;
+select * from dwd_notification_log where dt='2020-07-27' limit 10;
+select * from dwd_praise_log where dt='2020-07-27' limit 10;
+select * from dwd_start_log where dt='2020-07-27' limit 10;
+
+show partitions dwd_active_background_log;
+show partitions dwd_ad_log;
+show partitions dwd_base_event_log;
+show partitions dwd_comment_log;
+show partitions dwd_dim_activity_info;
+show partitions dwd_dim_coupon_info;
+show partitions dwd_dim_sku_info;
+show partitions dwd_display_log;
+show partitions dwd_error_log;
+show partitions dwd_fact_cart_info;
+show partitions dwd_fact_comment_info;
+show partitions dwd_fact_coupon_use;
+show partitions dwd_fact_favor_info;
+show partitions dwd_fact_order_detail;
+show partitions dwd_fact_order_info;
+show partitions dwd_fact_order_refund_info;
+show partitions dwd_fact_payment_info;
+show partitions dwd_favorites_log;
+show partitions dwd_loading_log;
+show partitions dwd_newsdetail_log;
+show partitions dwd_notification_log;
+show partitions dwd_praise_log;
+show partitions dwd_start_log;
+
+
+alter table dwd_active_background_log add partition (dt='2020-07-24');
+alter table dwd_active_background_log add partition (dt='2020-07-25');
+alter table dwd_active_background_log add partition (dt='2020-07-26');
+alter table dwd_active_background_log add partition (dt='2020-07-27');
+alter table dwd_active_background_log add partition (dt='2020-07-28');
+
+alter table dwd_ad_log add partition (dt='2020-07-24');
+alter table dwd_ad_log add partition (dt='2020-07-25');
+alter table dwd_ad_log add partition (dt='2020-07-26');
+alter table dwd_ad_log add partition (dt='2020-07-27');
+alter table dwd_ad_log add partition (dt='2020-07-28');
+
+alter table dwd_base_event_log add partition (dt='2020-07-24');
+alter table dwd_base_event_log add partition (dt='2020-07-25');
+alter table dwd_base_event_log add partition (dt='2020-07-26');
+alter table dwd_base_event_log add partition (dt='2020-07-27');
+alter table dwd_base_event_log add partition (dt='2020-07-28');
+
+alter table dwd_comment_log add partition (dt='2020-07-24');
+alter table dwd_comment_log add partition (dt='2020-07-25');
+alter table dwd_comment_log add partition (dt='2020-07-26');
+alter table dwd_comment_log add partition (dt='2020-07-27');
+alter table dwd_comment_log add partition (dt='2020-07-28');
+
+alter table dwd_dim_activity_info add partition (dt='2020-07-24');
+alter table dwd_dim_activity_info add partition (dt='2020-07-25');
+alter table dwd_dim_activity_info add partition (dt='2020-07-26');
+alter table dwd_dim_activity_info add partition (dt='2020-07-27');
+alter table dwd_dim_activity_info add partition (dt='2020-07-28');
+
+alter table dwd_dim_coupon_info add partition (dt='2020-07-24');
+alter table dwd_dim_coupon_info add partition (dt='2020-07-25');
+alter table dwd_dim_coupon_info add partition (dt='2020-07-26');
+alter table dwd_dim_coupon_info add partition (dt='2020-07-27');
+alter table dwd_dim_coupon_info add partition (dt='2020-07-28');
+
+alter table dwd_dim_sku_info add partition (dt='2020-07-24');
+alter table dwd_dim_sku_info add partition (dt='2020-07-25');
+alter table dwd_dim_sku_info add partition (dt='2020-07-26');
+alter table dwd_dim_sku_info add partition (dt='2020-07-27');
+alter table dwd_dim_sku_info add partition (dt='2020-07-28');
+
+alter table dwd_display_log add partition (dt='2020-07-24');
+alter table dwd_display_log add partition (dt='2020-07-25');
+alter table dwd_display_log add partition (dt='2020-07-26');
+alter table dwd_display_log add partition (dt='2020-07-27');
+alter table dwd_display_log add partition (dt='2020-07-28');
+
+alter table dwd_error_log add partition (dt='2020-07-24');
+alter table dwd_error_log add partition (dt='2020-07-25');
+alter table dwd_error_log add partition (dt='2020-07-26');
+alter table dwd_error_log add partition (dt='2020-07-27');
+alter table dwd_error_log add partition (dt='2020-07-28');
+
+alter table dwd_fact_cart_info add partition (dt='2020-07-24');
+alter table dwd_fact_cart_info add partition (dt='2020-07-25');
+alter table dwd_fact_cart_info add partition (dt='2020-07-26');
+alter table dwd_fact_cart_info add partition (dt='2020-07-27');
+alter table dwd_fact_cart_info add partition (dt='2020-07-28');
+
+alter table dwd_fact_comment_info add partition (dt='2020-07-24');
+alter table dwd_fact_comment_info add partition (dt='2020-07-25');
+alter table dwd_fact_comment_info add partition (dt='2020-07-26');
+alter table dwd_fact_comment_info add partition (dt='2020-07-27');
+alter table dwd_fact_comment_info add partition (dt='2020-07-28');
+
+alter table dwd_fact_coupon_use add partition (dt='2020-07-24');
+alter table dwd_fact_coupon_use add partition (dt='2020-07-25');
+alter table dwd_fact_coupon_use add partition (dt='2020-07-26');
+alter table dwd_fact_coupon_use add partition (dt='2020-07-27');
+alter table dwd_fact_coupon_use add partition (dt='2020-07-28');
+
+alter table dwd_fact_favor_info add partition (dt='2020-07-24');
+alter table dwd_fact_favor_info add partition (dt='2020-07-25');
+alter table dwd_fact_favor_info add partition (dt='2020-07-26');
+alter table dwd_fact_favor_info add partition (dt='2020-07-27');
+alter table dwd_fact_favor_info add partition (dt='2020-07-28');
+
+alter table dwd_fact_order_detail add partition (dt='2020-07-24');
+alter table dwd_fact_order_detail add partition (dt='2020-07-25');
+alter table dwd_fact_order_detail add partition (dt='2020-07-26');
+alter table dwd_fact_order_detail add partition (dt='2020-07-27');
+alter table dwd_fact_order_detail add partition (dt='2020-07-28');
+
+alter table dwd_fact_order_info add partition (dt='2020-07-24');
+alter table dwd_fact_order_info add partition (dt='2020-07-25');
+alter table dwd_fact_order_info add partition (dt='2020-07-26');
+alter table dwd_fact_order_info add partition (dt='2020-07-27');
+alter table dwd_fact_order_info add partition (dt='2020-07-28');
+
+alter table dwd_fact_order_refund_info add partition (dt='2020-07-24');
+alter table dwd_fact_order_refund_info add partition (dt='2020-07-25');
+alter table dwd_fact_order_refund_info add partition (dt='2020-07-26');
+alter table dwd_fact_order_refund_info add partition (dt='2020-07-27');
+alter table dwd_fact_order_refund_info add partition (dt='2020-07-28');
+
+alter table dwd_fact_payment_info add partition (dt='2020-07-24');
+alter table dwd_fact_payment_info add partition (dt='2020-07-25');
+alter table dwd_fact_payment_info add partition (dt='2020-07-26');
+alter table dwd_fact_payment_info add partition (dt='2020-07-27');
+alter table dwd_fact_payment_info add partition (dt='2020-07-28');
+
+alter table dwd_favorites_log add partition (dt='2020-07-24');
+alter table dwd_favorites_log add partition (dt='2020-07-25');
+alter table dwd_favorites_log add partition (dt='2020-07-26');
+alter table dwd_favorites_log add partition (dt='2020-07-27');
+alter table dwd_favorites_log add partition (dt='2020-07-28');
+
+alter table dwd_loading_log add partition (dt='2020-07-24');
+alter table dwd_loading_log add partition (dt='2020-07-25');
+alter table dwd_loading_log add partition (dt='2020-07-26');
+alter table dwd_loading_log add partition (dt='2020-07-27');
+alter table dwd_loading_log add partition (dt='2020-07-28');
+
+alter table dwd_newsdetail_log add partition (dt='2020-07-24');
+alter table dwd_newsdetail_log add partition (dt='2020-07-25');
+alter table dwd_newsdetail_log add partition (dt='2020-07-26');
+alter table dwd_newsdetail_log add partition (dt='2020-07-27');
+alter table dwd_newsdetail_log add partition (dt='2020-07-28');
+
+alter table dwd_notification_log add partition (dt='2020-07-24');
+alter table dwd_notification_log add partition (dt='2020-07-25');
+alter table dwd_notification_log add partition (dt='2020-07-26');
+alter table dwd_notification_log add partition (dt='2020-07-27');
+alter table dwd_notification_log add partition (dt='2020-07-28');
+
+alter table dwd_praise_log add partition (dt='2020-07-24');
+alter table dwd_praise_log add partition (dt='2020-07-25');
+alter table dwd_praise_log add partition (dt='2020-07-26');
+alter table dwd_praise_log add partition (dt='2020-07-27');
+alter table dwd_praise_log add partition (dt='2020-07-28');
+
+alter table dwd_start_log add partition (dt='2020-07-24');
+alter table dwd_start_log add partition (dt='2020-07-25');
+alter table dwd_start_log add partition (dt='2020-07-26');
+alter table dwd_start_log add partition (dt='2020-07-27');
+alter table dwd_start_log add partition (dt='2020-07-28');
+
+
+hdfs dfs -rm -r /warehouse/gmall/dws/dws_activity_info_daycount/*
+hdfs dfs -rm -r /warehouse/gmall/dws/dws_coupon_use_daycount/*
+hdfs dfs -rm -r /warehouse/gmall/dws/dws_sale_detail_daycount/*
+hdfs dfs -rm -r /warehouse/gmall/dws/dws_sku_action_daycount/*
+hdfs dfs -rm -r /warehouse/gmall/dws/dws_user_action_daycount/*
+hdfs dfs -rm -r /warehouse/gmall/dws/dws_uv_detail_daycount/*
+
+select * from dws_activity_info_daycount where dt='2020-07-27' limit 10;
+select * from dws_coupon_use_daycount where dt='2020-07-27' limit 10;
+select * from dws_sale_detail_daycount where dt='2020-07-27' limit 10;
+select * from dws_sku_action_daycount where dt='2020-07-27' limit 10;
+select * from dws_user_action_daycount where dt='2020-07-27' limit 10;
+select * from dws_uv_detail_daycount where dt='2020-07-27' limit 10;
+
+show partitions dws_activity_info_daycount;
+show partitions dws_coupon_use_daycount;
+show partitions dws_sale_detail_daycount;
+show partitions dws_sku_action_daycount;
+show partitions dws_user_action_daycount;
+show partitions dws_uv_detail_daycount;
+
+alter table dws_activity_info_daycount drop partition (dt='2020-07-10');
+alter table dws_activity_info_daycount drop partition (dt='2020-07-15');
+alter table dws_coupon_use_daycount drop partition (dt='2020-07-10');
+alter table dws_coupon_use_daycount drop partition (dt='2020-07-15');
+alter table dws_sale_detail_daycount drop partition (dt='2020-07-10');
+alter table dws_sale_detail_daycount drop partition (dt='2020-07-15');
+alter table dws_sku_action_daycount drop partition (dt='2020-07-10');
+alter table dws_sku_action_daycount drop partition (dt='2020-07-15');
+alter table dws_user_action_daycount drop partition (dt='2020-07-10');
+alter table dws_user_action_daycount drop partition (dt='2020-07-15');
+alter table dws_uv_detail_daycount drop partition (dt='2020-07-10');
+alter table dws_uv_detail_daycount drop partition (dt='2020-07-15');
+
+drop table if exists dwt_uv_topic;
+drop table if exists dwt_user_topic;
+drop table if exists dwt_sku_topic;
+drop table if exists dwt_coupon_topic;
+drop table if exists dwt_activity_topic;
+
+
+hdfs dfs -rm -r /warehouse/gmall/dwt/dwt_activity_topic/*
+hdfs dfs -rm -r /warehouse/gmall/dwt/dwt_coupon_topic/*
+hdfs dfs -rm -r /warehouse/gmall/dwt/dwt_sku_topic/*
+hdfs dfs -rm -r /warehouse/gmall/dwt/dwt_user_topic/*
+hdfs dfs -rm -r /warehouse/gmall/dwt/dwt_uv_topic/*
+
+select * from dwt_uv_topic limit 10;
+select * from dwt_user_topic limit 10;
+select * from dwt_sku_topic limit 10;
+select * from dwt_coupon_topic limit 10;
+select * from dwt_activity_topic limit 10;
+
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_appraise_bad_topN/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_back_count/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_continuity_uv_count/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_continuity_wk_count/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_new_mid_count/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_order_daycount/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_payment_daycount/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_product_cart_topN/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_product_favor_topN/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_product_info/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_product_refund_topN/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_product_sale_topN/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_sale_tm_category1_stat_mn/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_silent_count/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_user_action_convert_day/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_user_retention_day_rate/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_user_topic/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_uv_count/*
+hdfs dfs -rm -r /warehouse/gmall/ads/ads_wastage_count/*
+
+select * from ads_appraise_bad_topN limit 10;
+select * from ads_back_count limit 10;
+select * from ads_continuity_uv_count limit 10;
+select * from ads_continuity_wk_count limit 10;
+select * from ads_new_mid_count limit 10;
+
+select * from ads_order_daycount limit 10;
+select * from ads_payment_daycount limit 10;
+select * from ads_product_cart_topN limit 10;
+select * from ads_product_favor_topN limit 10;
+select * from ads_product_info limit 10;
+
+select * from ads_product_refund_topN limit 10;
+select * from ads_product_sale_topN limit 10;
+select * from ads_sale_tm_category1_stat_mn limit 10;
+select * from ads_silent_count limit 10;
+select * from ads_user_action_convert_day limit 10;
+
+select * from ads_user_retention_day_rate limit 10;
+select * from ads_user_topic limit 10;
+select * from ads_uv_count limit 10;
+select * from ads_wastage_count limit 10;
+
+
+keytool -keystore keystore -alias kevin -genkey -keyalg RSA
+keytool -keystore keystore -list
+
+
+CREATE DATABASE `gmall_report` CHARACTER SET 'utf8' COLLATE 'utf8_general_ci';
+
+DROP TABLE IF EXISTS `ads_user_topic`;
+CREATE TABLE `ads_user_topic` (
+    `dt` date NOT NULL,
+    `day_users` bigint(255) NULL DEFAULT NULL,
+    `day_new_users` bigint(255) NULL DEFAULT NULL,
+    `day_new_payment_users` bigint(255) NULL DEFAULT NULL,
+    `payment_users` bigint(255) NULL DEFAULT NULL,
+    `users` bigint(255) NULL DEFAULT NULL,
+    `day_users2users` double(255, 2) NULL DEFAULT NULL,
+    `payment_users2users` double(255, 2) NULL DEFAULT NULL,
+    `day_new_users2users` double(255, 2) NULL DEFAULT NULL,
+    PRIMARY KEY (`dt`) USING BTREE
+) ENGINE = InnoDB
+CHARACTER SET = utf8 COLLATE = utf8_general_ci
+ROW_FORMAT = Compact;
+
+
+type=command
+command=/opt/module/datas/gmallv2/mysql_to_hdfs.sh all ${dt}
+
+type=command
+command=/opt/module/datas/gmallv2/hdfs_to_hive_ods_log.sh ${dt}
+
+type=command
+command=/opt/module/datas/gmallv2/hdfs_to_hive_ods_db.sh all ${dt}
+dependencies=mysql_to_hdfs
+
+type=command
+command=/opt/module/datas/gmallv2/ods_to_dwd_start_log.sh ${dt}
+dependencies=hdfs_to_ods_log
+
+type=command
+command=/opt/module/datas/gmallv2/ods_to_dwd_base_event_log.sh ${dt}
+dependencies=hdfs_to_ods_log
+
+type=command
+command=/opt/module/datas/gmallv2/ods_to_dwd_event_log.sh ${dt}
+dependencies=ods_to_dwd_base_event_log
+
+type=command
+command=/opt/module/datas/gmallv2/ods_to_dwd_db.sh all ${dt}
+dependencies=hdfs_to_ods_db
+
+type=command
+command=/opt/module/datas/gmallv2/dwd_to_dws.sh ${dt}
+dependencies=ods_to_dwd_db,ods_to_dwd_start_log,ods_to_dwd_event_log
+
+type=command
+command=/opt/module/datas/gmallv2/dws_to_dwt.sh ${dt}
+dependencies=dwd_to_dws
+
+type=command
+command=/opt/module/datas/gmallv2/dwt_to_ads.sh ${dt}
+dependencies=dws_to_dwt
+
+type=command
+command=/opt/module/datas/gmallv2/hdfs_to_mysql.sh ads_user_topic
+dependencies=dwt_to_ads
+
+
+
+nohup bin/hive --service metastore >/dev/null 2>&1 &
+nohup bin/hive --service hiveserver2 >/dev/null 2>&1 &
+
+netstat -tunlp |grep 端口号
+lsof -i:端口号
+
+
