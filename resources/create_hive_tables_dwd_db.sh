@@ -105,9 +105,7 @@ create external table dwd_dim_date_info(
     holiday_id int comment '是否是节假日' 
 )
 row format delimited fields terminated by '\t' 
-stored as parquet 
-location '/warehouse/gmall/dwd/dwd_dim_date_info/' 
-tblproperties('parquet.compression'='lzo');
+location '/warehouse/gmall/dwd/dwd_dim_date_info/';
 
 drop table if exists dwd_fact_order_detail; 
 create external table dwd_fact_order_detail ( 
